@@ -1,0 +1,6 @@
+load STM32F407VGTx 
+project name STCubeGenerated 
+project toolchain "MDK-ARM V5" 
+project path "C:\Users\3060\Documents\MEGA\EmbededProgramming\MyCodes\STM32F407\Quadrotor\RTE\Device\STM32F407VGTx\" 
+set tpl_path "C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\MDK\CubeMX" 
+set dest_path "STM32F407VGTx" 
