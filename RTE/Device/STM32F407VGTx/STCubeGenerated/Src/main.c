@@ -32,6 +32,7 @@
   
 #include "cmsis_os2.h"
 #include "adxl345.h"
+#include "comm_input.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -191,7 +192,16 @@ void SystemClock_Config(void)
   */
 void app_main (void* arg)
 {
-	ADXL345_SetMaxTapDuration(&ADXL345, 61);
+	COM_Input_Init();
+
+	ADXL345_SetInactivityTime(&ADXL345, 48);
+	ADXL345_SetInactivityThreshold(&ADXL345, 135.2);
+	
+
+
+
+	double v2 = ADXL345_GetInactivityThreshold(&ADXL345);
+	double v1 = ADXL345_GetInactivityTime(&ADXL345);
 
 
 	while(true)

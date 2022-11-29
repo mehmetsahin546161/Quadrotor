@@ -1,5 +1,6 @@
 #include "adxl345.h"
-
+#include "cmsis_os2.h"
+#include "comm_input.h"
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -23,33 +24,27 @@ void ADXL345_Init(void)
   * @param[IN]  ADXL345 Sensor handler
   * @retval 		None
   */
-void ADXL345_WhoAmI(ADXL345_HandleTypeDef * ADXL345)
+uint8_t ADXL345_WhoAmI(ADXL345_HandleTypeDef * ADXL345)
 {
-	//Mesaji queueye koy setle
-	//COM_Input_SendThread de ise bekle. mesaj olunca al. IT li fonksiyonu çagir.  onunda callbackinde flagi setle. woow bu kisimi state machine yaparsam iyi olur. 
-	//Return type da ekle
-	//Timeout da ekle.
+	osMutexAcquire(MTX_comInputRx, osWaitForever);
 	
-	//states
-	//IDLE
-	//MESSAGE REQUEST IS ACCEPTED
-	//MESSAGE IS STARTED TO PROCESS
-	//TIMEOUT VEYA MESAGE IS COMPLETED 
-	//gibi gibi falan yaani.
+	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
+																				.DevAddress = ADXL345->i2cDevAddr << 1,
+																				.MemAddress	= DEVID,
+																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																				.Size = ADXL345_REGISTER_SIZE };
 	
+	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
+	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
 	
+	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
 	
-	
-	
-	//uint8_t buff;
-	//
-	//HAL_I2C_Master_Receive(	ADXL345->i2cHandle, 
-	//												ADXL345->i2cDevAddr << 1,
-	//												&buff,
-	//												1,
-	//												100);
-	//
-	//return buff;
+	osMutexRelease(MTX_comInputRx);
+																				
+	return receivedMsg.Data;
+
 }
 
  
@@ -65,16 +60,23 @@ void ADXL345_SetTapThreshold(ADXL345_HandleTypeDef * ADXL345, double tapThresh)
 {
 	if( (tapThresh>=0) && (tapThresh<=16) )
 	{
-	
-		uint8_t regVal = (1/TAP_THRESH_SCALE_FACTOR)*tapThresh;
+		uint8_t sendVal = (1/TAP_THRESH_SCALE_FACTOR)*tapThresh;
 		
-		HAL_I2C_Mem_Write( ADXL345->i2cHandle, 
-											 ADXL345->i2cDevAddr << 1,
-											 THRESH_TAP,
-											 I2C_MEMADD_SIZE_8BIT,
-											 &regVal,
-											 1,
-											 100 );
+		osMutexAcquire(MTX_comInputTx, osWaitForever);
+		
+		COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
+																			.DevAddress = ADXL345->i2cDevAddr << 1,
+																			.MemAddress	= THRESH_TAP,
+																			.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																			.Data = sendVal,
+																			.Size = ADXL345_REGISTER_SIZE };
+		
+		osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
+					
+		osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
+		osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
+																			
+		osMutexRelease(MTX_comInputTx);	
 	}
 }
 
@@ -87,18 +89,24 @@ void ADXL345_SetTapThreshold(ADXL345_HandleTypeDef * ADXL345, double tapThresh)
   */
 double ADXL345_GetTapThreshold(ADXL345_HandleTypeDef * ADXL345)
 {
-	uint8_t regVal = 0;
+	osMutexAcquire(MTX_comInputRx, osWaitForever);
 	
-	HAL_I2C_Mem_Read( ADXL345->i2cHandle,
-										ADXL345->i2cDevAddr << 1, 
-										THRESH_TAP,
-										I2C_MEMADD_SIZE_8BIT,
-										&regVal,
-										1,
-										100 );
+	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
+																				.DevAddress = ADXL345->i2cDevAddr << 1,
+																				.MemAddress	= THRESH_TAP,
+																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																				.Size = ADXL345_REGISTER_SIZE };
 	
-	return regVal*TAP_THRESH_SCALE_FACTOR;
-
+	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
+	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
+	
+	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
+	
+	osMutexRelease(MTX_comInputRx);
+																				
+	return (receivedMsg.Data)*TAP_THRESH_SCALE_FACTOR;
 }
 
 /**
@@ -113,22 +121,31 @@ void ADXL345_SetOffset(ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis, doubl
 {
 	if( (offset<=2) && (offset>=-2) )
 	{
-		uint8_t regVal = 	(offset<0) ? (uint8_t)(~((uint8_t)(-1*offset*(1/OFFSET_SCALE_FACTOR)))) + 1 :
+		uint8_t sendVal = (offset<0) ? (uint8_t)(~((uint8_t)(-1*offset*(1/OFFSET_SCALE_FACTOR)))) + 1 :
 											(offset>0) ? (offset*(1/OFFSET_SCALE_FACTOR))	:	0;
 		
-		uint8_t memAddress = 	(axis==X_AXIS) ? OFSX :
-													(axis==Y_AXIS) ? OFSY :
-													(axis==Z_AXIS) ? OFSZ	:	INVALID_DATA;
+		uint8_t memAddress = (axis==X_AXIS) ? OFSX :
+												 (axis==Y_AXIS) ? OFSY :
+												 (axis==Z_AXIS) ? OFSZ :
+																					INVALID_DATA;
 		
 		if(memAddress != INVALID_DATA)
 		{
-			HAL_I2C_Mem_Write( 	ADXL345->i2cHandle, 
-													ADXL345->i2cDevAddr << 1,
-													memAddress,
-													I2C_MEMADD_SIZE_8BIT,
-													&regVal,
-													1,
-													100 );
+			osMutexAcquire(MTX_comInputTx, osWaitForever);
+			
+			COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
+																				.DevAddress = ADXL345->i2cDevAddr << 1,
+																				.MemAddress	= memAddress,
+																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																				.Data = sendVal,
+																				.Size = ADXL345_REGISTER_SIZE };
+		
+			osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
+						
+			osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
+			osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
+																				
+			osMutexRelease(MTX_comInputTx);	
 		}
 	}
 }
@@ -143,31 +160,40 @@ void ADXL345_SetOffset(ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis, doubl
   */
 double	ADXL345_GetOffset(ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis)
 {
-	uint8_t regVal = 0;
-	
 	uint8_t memAddress = 	(axis==X_AXIS) ? OFSX :
 												(axis==Y_AXIS) ? OFSY :
 												(axis==Z_AXIS) ? OFSZ	:	INVALID_DATA;
 		
 	if(memAddress != INVALID_DATA)
 	{
-		HAL_I2C_Mem_Read( ADXL345->i2cHandle,
-											ADXL345->i2cDevAddr << 1, 
-											memAddress,
-											I2C_MEMADD_SIZE_8BIT,
-											&regVal,
-											1,
-											100 );
+		osMutexAcquire(MTX_comInputRx, osWaitForever);
+		
+		COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
+																				.DevAddress = ADXL345->i2cDevAddr << 1,
+																				.MemAddress	= memAddress,
+																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																				.Size = ADXL345_REGISTER_SIZE };
 	
+		osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
+					
+		osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
+		osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
+		
+		osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
+	
+		osMutexRelease(MTX_comInputRx);											
+																				
 		/* Check MSB bit to find the sign of the value. */
-		double offsetVal = 	((regVal) & (1<<ADXL345_REG_MSB_BIT)) ?
-													(-1*( (uint8_t)( ~(regVal-1) )*OFFSET_SCALE_FACTOR))	:			// Negative number
-													(regVal*OFFSET_SCALE_FACTOR);																// Positive number
+		double offsetVal = 	((receivedMsg.Data) & (1<<ADXL345_REG_MSB_BIT)) ?
+													(-1*( (uint8_t)( ~(receivedMsg.Data-1) )*OFFSET_SCALE_FACTOR))	:			// Negative number
+													(receivedMsg.Data*OFFSET_SCALE_FACTOR);																// Positive number
+		
+		
 		
 		return offsetVal;
 	}
 	
-	return -61;
+	return 6154.6154;
 }
 
 /**
@@ -180,25 +206,23 @@ double	ADXL345_GetOffset(ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis)
   */
 void ADXL345_SetMaxTapDuration(ADXL345_HandleTypeDef * ADXL345, uint32_t maxTapDur)
 {
-	uint8_t	regVal = maxTapDur/DUR_TIME_SCALE_FACTOR;
+	uint8_t	sendVal = maxTapDur/DUR_TIME_SCALE_FACTOR;
 	
-	//HAL_I2C_Mem_Write(	ADXL345->i2cHandle, 
-	//										ADXL345->i2cDevAddr << 1,
-	//										DUR,
-	//										I2C_MEMADD_SIZE_8BIT,
-	//										&regVal,
-	//										1,
-	//										100 );
+	osMutexAcquire(MTX_comInputTx, osWaitForever);
 	
-	HAL_I2C_Mem_Write_DMA (	ADXL345->i2cHandle,
-													ADXL345->i2cDevAddr << 1,
-													DUR,
-													I2C_MEMADD_SIZE_8BIT,
-													&regVal, 
-													1 );
-	
-	
-	
+	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
+																		.DevAddress = ADXL345->i2cDevAddr << 1,
+																		.MemAddress	= DUR,
+																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																		.Data = sendVal,
+																		.Size = ADXL345_REGISTER_SIZE };
+		
+	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
+	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
+																		
+	osMutexRelease(MTX_comInputTx);	
 }
 
 /**
@@ -210,25 +234,24 @@ void ADXL345_SetMaxTapDuration(ADXL345_HandleTypeDef * ADXL345, uint32_t maxTapD
   */
 uint32_t ADXL345_GetMaxTapDuration(ADXL345_HandleTypeDef * ADXL345)
 {
-	//HAL_I2C_Mem_Read( ADXL345->i2cHandle,
-	//									ADXL345->i2cDevAddr << 1, 
-	//									DUR,
-	//									I2C_MEMADD_SIZE_8BIT,
-	//									&regVal,
-	//									1,
-	//									100 );
-	//
-	//return regVal*DUR_TIME_SCALE_FACTOR;
+	osMutexAcquire(MTX_comInputRx, osWaitForever);
 	
-	HAL_I2C_Mem_Read_DMA(	ADXL345->i2cHandle, 
-												ADXL345->i2cDevAddr << 1,
-												DUR, 
-												I2C_MEMADD_SIZE_8BIT,
-												&ADXL345->memRead, 
-												1);
+	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
+																				.DevAddress = ADXL345->i2cDevAddr << 1,
+																				.MemAddress	= DUR,
+																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																				.Size = ADXL345_REGISTER_SIZE };
 	
-	//TODO:Only for debug
-	return 0;
+	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
+	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
+	
+	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
+	
+	osMutexRelease(MTX_comInputRx);
+	
+	return (receivedMsg.Data)*DUR_TIME_SCALE_FACTOR;
 }
 
 /**
@@ -242,15 +265,23 @@ uint32_t ADXL345_GetMaxTapDuration(ADXL345_HandleTypeDef * ADXL345)
   */
 void ADXL345_SetLatencyTime(ADXL345_HandleTypeDef * ADXL345, double latTime)
 {
-	uint8_t	regVal = latTime/LATENT_TIME_SCALE_FACTOR;
+	uint8_t	sendVal = latTime/LATENT_TIME_SCALE_FACTOR;
 	
-	HAL_I2C_Mem_Write(	ADXL345->i2cHandle, 
-											ADXL345->i2cDevAddr << 1,
-											LATENT,
-											I2C_MEMADD_SIZE_8BIT,
-											&regVal,
-											1,		
-											100 );
+	osMutexAcquire(MTX_comInputTx, osWaitForever);
+	
+	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
+																		.DevAddress = ADXL345->i2cDevAddr << 1,
+																		.MemAddress	= LATENT,
+																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																		.Data = sendVal,
+																		.Size = ADXL345_REGISTER_SIZE };
+		
+	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
+	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
+																		
+	osMutexRelease(MTX_comInputTx);	
 }
 
 /**
@@ -263,17 +294,24 @@ void ADXL345_SetLatencyTime(ADXL345_HandleTypeDef * ADXL345, double latTime)
   */
 double ADXL345_GetLatencyTime(ADXL345_HandleTypeDef * ADXL345)
 {
-	uint8_t regVal = 0;
+	osMutexAcquire(MTX_comInputRx, osWaitForever);
 	
-	HAL_I2C_Mem_Read( ADXL345->i2cHandle,
-										ADXL345->i2cDevAddr << 1, 
-										LATENT,
-										I2C_MEMADD_SIZE_8BIT,
-										&regVal,
-										1,
-										100 );
+	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
+																				.DevAddress = ADXL345->i2cDevAddr << 1,
+																				.MemAddress	= LATENT,
+																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																				.Size = ADXL345_REGISTER_SIZE };
 	
-	return regVal*LATENT_TIME_SCALE_FACTOR;
+	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
+	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
+	
+	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
+	
+	osMutexRelease(MTX_comInputRx);																			
+																				
+	return (receivedMsg.Data)*LATENT_TIME_SCALE_FACTOR;
 }
 
 /**
@@ -287,15 +325,23 @@ double ADXL345_GetLatencyTime(ADXL345_HandleTypeDef * ADXL345)
   */
 void ADXL345_SetWindowTime(ADXL345_HandleTypeDef * ADXL345, double winTime)
 {
-	uint8_t	regVal = winTime/WINDOW_TIME_SCALE_FACTOR;
+	uint8_t	sendVal = winTime/WINDOW_TIME_SCALE_FACTOR;
 	
-	HAL_I2C_Mem_Write(	ADXL345->i2cHandle, 
-											ADXL345->i2cDevAddr << 1,
-											WINDOW,
-											I2C_MEMADD_SIZE_8BIT,
-											&regVal,
-											1,		
-											100 );
+	osMutexAcquire(MTX_comInputTx, osWaitForever);
+	
+	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
+																		.DevAddress = ADXL345->i2cDevAddr << 1,
+																		.MemAddress	= WINDOW,
+																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																		.Data = sendVal,
+																		.Size = ADXL345_REGISTER_SIZE };
+		
+	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
+	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
+																		
+	osMutexRelease(MTX_comInputTx);	
 }
 
 /**
@@ -308,17 +354,24 @@ void ADXL345_SetWindowTime(ADXL345_HandleTypeDef * ADXL345, double winTime)
   */
 double ADXL345_GetWindowTime(ADXL345_HandleTypeDef * ADXL345)
 {
-	uint8_t regVal = 0;
+	osMutexAcquire(MTX_comInputRx, osWaitForever);
 	
-	HAL_I2C_Mem_Read( ADXL345->i2cHandle,
-										ADXL345->i2cDevAddr << 1, 
-										WINDOW,
-										I2C_MEMADD_SIZE_8BIT,
-										&regVal,
-										1,
-										100 );
+	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
+																				.DevAddress = ADXL345->i2cDevAddr << 1,
+																				.MemAddress	= WINDOW,
+																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																				.Size = ADXL345_REGISTER_SIZE };
 	
-	return regVal*WINDOW_TIME_SCALE_FACTOR;
+	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
+	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
+	
+	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
+
+	osMutexRelease(MTX_comInputRx);
+																				
+	return (receivedMsg.Data)*WINDOW_TIME_SCALE_FACTOR;
 }
 
 /**
@@ -329,17 +382,25 @@ double ADXL345_GetWindowTime(ADXL345_HandleTypeDef * ADXL345)
   * @param[IN]  dActThresh	Minimum threshold value for detecting activity.
   * @retval 		None
   */
-void ADXL345_SetActivityThreshold(ADXL345_HandleTypeDef * ADXL345, double dActThresh)
+void ADXL345_SetActivityThreshold(ADXL345_HandleTypeDef * ADXL345, double actThresh)
 {
-	uint8_t	regVal = dActThresh/ACTIVITY_THRESH_SCALE_FACTOR;
+	uint8_t	sendVal = actThresh/ACTIVITY_THRESH_SCALE_FACTOR;
 	
-	HAL_I2C_Mem_Write(	ADXL345->i2cHandle, 
-											ADXL345->i2cDevAddr << 1,
-											THRESH_ACT,
-											I2C_MEMADD_SIZE_8BIT,
-											&regVal,
-											1,		
-											100 );
+	osMutexAcquire(MTX_comInputTx, osWaitForever);
+	
+	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
+																		.DevAddress = ADXL345->i2cDevAddr << 1,
+																		.MemAddress	= THRESH_ACT,
+																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																		.Data = sendVal,
+																		.Size = ADXL345_REGISTER_SIZE };
+		
+	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
+	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
+																		
+	osMutexRelease(MTX_comInputTx);	
 }
 
 /**
@@ -351,17 +412,24 @@ void ADXL345_SetActivityThreshold(ADXL345_HandleTypeDef * ADXL345, double dActTh
   */
 double ADXL345_GetActivityThreshold(ADXL345_HandleTypeDef * ADXL345)
 {
-	uint8_t regVal = 0;
+	osMutexAcquire(MTX_comInputRx, osWaitForever);
 	
-	HAL_I2C_Mem_Read( ADXL345->i2cHandle,
-										ADXL345->i2cDevAddr << 1, 
-										WINDOW,
-										I2C_MEMADD_SIZE_8BIT,
-										&regVal,
-										1,
-										100 );
+	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
+																				.DevAddress = ADXL345->i2cDevAddr << 1,
+																				.MemAddress	= THRESH_ACT,
+																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																				.Size = ADXL345_REGISTER_SIZE };
 	
-	return regVal*WINDOW_TIME_SCALE_FACTOR;
+	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
+	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
+	
+	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
+
+	osMutexRelease(MTX_comInputRx);
+																				
+	return (receivedMsg.Data)*WINDOW_TIME_SCALE_FACTOR;
 }
 
 /**
@@ -372,17 +440,25 @@ double ADXL345_GetActivityThreshold(ADXL345_HandleTypeDef * ADXL345)
   * @param[IN]  dInactThresh	Minimum threshold value for detecting activity.
   * @retval 		None
   */
-void ADXL345_SetInactivityThreshold(ADXL345_HandleTypeDef * ADXL345, double dInactThresh)
+void ADXL345_SetInactivityThreshold(ADXL345_HandleTypeDef * ADXL345, double inactThresh)
 {
-	uint8_t	regVal = dInactThresh/INACTIVITY_THRESH_SCALE_FACTOR;
+	uint8_t	sendVal = inactThresh/INACTIVITY_THRESH_SCALE_FACTOR;
 	
-	HAL_I2C_Mem_Write(	ADXL345->i2cHandle, 
-											ADXL345->i2cDevAddr << 1,
-											THRESH_INACT,
-											I2C_MEMADD_SIZE_8BIT,
-											&regVal,
-											1,		
-											100 );
+	osMutexAcquire(MTX_comInputTx, osWaitForever);
+	
+	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
+																		.DevAddress = ADXL345->i2cDevAddr << 1,
+																		.MemAddress	= THRESH_INACT,
+																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																		.Data = sendVal,
+																		.Size = ADXL345_REGISTER_SIZE };
+		
+	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
+					
+	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
+	uint32_t retVal = osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
+																		
+	osMutexRelease(MTX_comInputTx);	
 }
 
 /**
@@ -394,17 +470,24 @@ void ADXL345_SetInactivityThreshold(ADXL345_HandleTypeDef * ADXL345, double dIna
   */
 double ADXL345_GetInactivityThreshold(ADXL345_HandleTypeDef * ADXL345)
 {
-	uint8_t regVal = 0;
+	osMutexAcquire(MTX_comInputRx, osWaitForever);
 	
-	HAL_I2C_Mem_Read( ADXL345->i2cHandle,
-										ADXL345->i2cDevAddr << 1, 
-										THRESH_INACT,
-										I2C_MEMADD_SIZE_8BIT,
-										&regVal,
-										1,
-										100 );
+	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
+																				.DevAddress = ADXL345->i2cDevAddr << 1,
+																				.MemAddress	= THRESH_INACT,
+																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																				.Size = ADXL345_REGISTER_SIZE };
 	
-	return regVal*INACTIVITY_THRESH_SCALE_FACTOR;
+	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
+	uint32_t retVal = osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
+	
+	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
+	
+	osMutexRelease(MTX_comInputRx);
+																				
+	return (receivedMsg.Data)*INACTIVITY_THRESH_SCALE_FACTOR;
 }
 
 /**
@@ -418,17 +501,25 @@ double ADXL345_GetInactivityThreshold(ADXL345_HandleTypeDef * ADXL345)
   * @param[IN]  dMinInactTime	Minimum time value for detecting inactivity.
   * @retval 		None
   */
-void ADXL345_SetInactivityTime(ADXL345_HandleTypeDef * ADXL345, double dMinInactTime)
+void ADXL345_SetInactivityTime(ADXL345_HandleTypeDef * ADXL345, uint8_t minInactTime)
 {
-	uint8_t	regVal = dMinInactTime/TIME_INACTIVITY_SCALE_FACTOR;
+	uint8_t	sendVal = minInactTime/TIME_INACTIVITY_SCALE_FACTOR;
 	
-	HAL_I2C_Mem_Write(	ADXL345->i2cHandle, 
-											ADXL345->i2cDevAddr << 1,
-											TIME_INACT,
-											I2C_MEMADD_SIZE_8BIT,
-											&regVal,
-											1,		
-											100 );
+	osMutexAcquire(MTX_comInputTx, osWaitForever);
+	
+	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
+																		.DevAddress = ADXL345->i2cDevAddr << 1,
+																		.MemAddress	= TIME_INACT,
+																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																		.Data = sendVal,
+																		.Size = ADXL345_REGISTER_SIZE };
+		
+	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
+					
+	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
+	uint32_t retVal = osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
+																		
+	osMutexRelease(MTX_comInputTx);	
 }
 
 /**
@@ -441,19 +532,26 @@ void ADXL345_SetInactivityTime(ADXL345_HandleTypeDef * ADXL345, double dMinInact
 	*	@param[IN]  ADXL345 Sensor handler.
   * @retval 		Minimum time value for detecting inactivity.
   */
-double ADXL345_GetInactivityTime(ADXL345_HandleTypeDef * ADXL345)
+uint8_t ADXL345_GetInactivityTime(ADXL345_HandleTypeDef * ADXL345)
 {
-	uint8_t regVal = 0;
+	osMutexAcquire(MTX_comInputRx, osWaitForever);
 	
-	HAL_I2C_Mem_Read( ADXL345->i2cHandle,
-										ADXL345->i2cDevAddr << 1, 
-										TIME_INACT,
-										I2C_MEMADD_SIZE_8BIT,
-										&regVal,
-										1,
-										100 );
+	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
+																				.DevAddress = ADXL345->i2cDevAddr << 1,
+																				.MemAddress	= TIME_INACT,
+																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																				.Size = ADXL345_REGISTER_SIZE };
 	
-	return regVal*TIME_INACTIVITY_SCALE_FACTOR;
+	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
+	uint32_t retVal = osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
+	
+	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
+	
+	osMutexRelease(MTX_comInputRx);
+																				
+	return (receivedMsg.Data)*TIME_INACTIVITY_SCALE_FACTOR;
 }
 
 /**
@@ -465,15 +563,21 @@ double ADXL345_GetInactivityTime(ADXL345_HandleTypeDef * ADXL345)
   */
 void ADXL345_ConfigInterrupts(ADXL345_HandleTypeDef * ADXL345, ADXL345_InterruptReg intReg)
 {
-	uint8_t regVal = intReg.BYTE;
+	osMutexAcquire(MTX_comInputTx, osWaitForever);
 	
-	HAL_I2C_Mem_Write( ADXL345->i2cHandle, 
-										 ADXL345->i2cDevAddr << 1,
-										 INT_ENABLE,
-										 I2C_MEMADD_SIZE_8BIT,
-										 &regVal,
-										 1,		
-										 100 );
+	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
+																		.DevAddress = ADXL345->i2cDevAddr << 1,
+																		.MemAddress	= INT_ENABLE,
+																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																		.Data = intReg.BYTE,
+																		.Size = ADXL345_REGISTER_SIZE };
+		
+	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
+					
+	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
+	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
+																		
+	osMutexRelease(MTX_comInputTx);	
 }
 
 
@@ -486,18 +590,25 @@ void ADXL345_ConfigInterrupts(ADXL345_HandleTypeDef * ADXL345, ADXL345_Interrupt
   */
 ADXL345_InterruptReg ADXL345_GetInterruptStatus(ADXL345_HandleTypeDef * ADXL345)
 {
-	uint8_t regVal =  0;
+	osMutexAcquire(MTX_comInputRx, osWaitForever);
 	
-	HAL_I2C_Mem_Read( ADXL345->i2cHandle,
-										ADXL345->i2cDevAddr << 1, 
-										INT_SOURCE,
-										I2C_MEMADD_SIZE_8BIT,
-										&regVal,
-										1,
-										100 );
+	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
+																				.DevAddress = ADXL345->i2cDevAddr << 1,
+																				.MemAddress	= INT_SOURCE,
+																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																				.Size = ADXL345_REGISTER_SIZE };
 	
-	ADXL345_InterruptReg intReg = {.BYTE=regVal};
+	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
+	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
 	
+	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
+	
+	osMutexRelease(MTX_comInputRx);																			
+																				
+	ADXL345_InterruptReg intReg = {.BYTE=receivedMsg.Data};
+
 	return intReg;
 }
 
@@ -517,65 +628,68 @@ void ADXL345_MapInterruptPins(ADXL345_HandleTypeDef * ADXL345, ADXL345_Interrupt
 	/* It is recommended that interrupt bits be configured with the interrupts disabled,
 		 preventing interrupts from being accidentally triggered during configuration.
 		 This can be done by writing a value of 0x00 to the INT_ENABLE register.*/
-	ADXL345_InterruptReg unIntReg = {.BYTE = RESET_ALL_INTERRUPTS};
-	ADXL345_ConfigInterrupts(ADXL345, unIntReg);
+	ADXL345_InterruptReg intReg = {.BYTE = RESET_ALL_INTERRUPTS};
+	ADXL345_ConfigInterrupts(ADXL345, intReg);
 
-	uint8_t regVal = (~pinMap[ADXL345_INT1_PIN].BYTE) |
+	uint8_t sendVal = (~pinMap[ADXL345_INT1_PIN].BYTE) |
 										( pinMap[ADXL345_INT2_PIN].BYTE);
 	
-	HAL_I2C_Mem_Write( 	ADXL345->i2cHandle, 
-											ADXL345->i2cDevAddr << 1,
-											INT_MAP,
-											I2C_MEMADD_SIZE_8BIT,
-											&regVal,
-											1,		
-											100 );
+	osMutexAcquire(MTX_comInputTx, osWaitForever);
+	
+	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
+																		.DevAddress = ADXL345->i2cDevAddr << 1,
+																		.MemAddress	= INT_MAP,
+																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																		.Data = intReg.BYTE,
+																		.Size = ADXL345_REGISTER_SIZE };
+		
+	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
+					
+	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
+	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
+																		
+	osMutexRelease(MTX_comInputTx);	
 }
 
-/**
-  * @brief  		
-	*	@param[IN]  ADXL345 	Sensor handler.
-  * @retval 		
-  */
-ADXL345_RawDatas	ADXL345_GetRawDatasPolling(ADXL345_HandleTypeDef * ADXL345)
-{
-	//ADXL345_RawDatas sRawDatas = {	.rawXData = ADXL345_AXIS_DATAS_NOT_READY,
-	//																.rawYData = ADXL345_AXIS_DATAS_NOT_READY,
-	//																.rawZData = ADXL345_AXIS_DATAS_NOT_READY };
-	//
-	//ADXL345_InterruptReg intReg = ADXL345_GetInterruptStatus(ADXL345);
-	//
-	//if(intReg.BIT.dataReady == true)
-	//{
-	//	// TODO:BURADA X Y Z IÇIN AYRI OKUM KISIMLARINI DA EKLE
-	//}
-	//
-	
-	//TODO:Only for debug
-	ADXL345_RawDatas ss;
-	return ss;
-}
-
-/**
-  * @brief  		
-	*	@param[IN]  ADXL345 	Sensor handler.
-  * @retval 		
-  */
-ADXL345_RawDatas	ADXL345_GetRawDatasIT(ADXL345_HandleTypeDef * ADXL345)
-{
-	//ADXL345_RawDatas sRawDatas = {	.rawXData = ADXL345_AXIS_DATAS_NOT_READY,
-	//																.rawYData = ADXL345_AXIS_DATAS_NOT_READY,
-	//																.rawZData = ADXL345_AXIS_DATAS_NOT_READY };
-	//
-	//ADXL345_InterruptReg intReg = ADXL345_GetInterruptStatus(ADXL345);
-	//
-	//if(intReg.BIT.dataReady == true)
-	//{
-	//	// TODO:BURADA X Y Z IÇIN AYRI OKUM KISIMLARINI DA EKLE
-	//}
-	//
-	
-	//TODO:Only for debug
-	ADXL345_RawDatas ss;
-	return ss;
-}
+///////////////**
+//////////////  * @brief  		
+//////////////	*	@param[IN]  ADXL345 	Sensor handler.
+//////////////  * @retval 		
+//////////////  */
+//////////////void	ADXL345_GetRawDatasPolling(ADXL345_HandleTypeDef * ADXL345)
+//////////////{
+//////////////	//ADXL345_RawDatas sRawDatas = {	.rawXData = ADXL345_AXIS_DATAS_NOT_READY,
+//////////////	//																.rawYData = ADXL345_AXIS_DATAS_NOT_READY,
+//////////////	//																.rawZData = ADXL345_AXIS_DATAS_NOT_READY };
+//////////////	//
+//////////////	//ADXL345_InterruptReg intReg = ADXL345_GetInterruptStatus(ADXL345);
+//////////////	//
+//////////////	//if(intReg.BIT.dataReady == true)
+//////////////	//{
+//////////////	//	// TODO:BURADA X Y Z IÇIN AYRI OKUM KISIMLARINI DA EKLE
+//////////////	//}
+//////////////	//
+//////////////	
+//////////////}
+//////////////
+///////////////**
+//////////////  * @brief  		
+//////////////	*	@param[IN]  ADXL345 	Sensor handler.
+//////////////  * @retval 		
+//////////////  */
+//////////////void	ADXL345_GetRawDatasIT(ADXL345_HandleTypeDef * ADXL345)
+//////////////{
+//////////////	//ADXL345_RawDatas sRawDatas = {	.rawXData = ADXL345_AXIS_DATAS_NOT_READY,
+//////////////	//																.rawYData = ADXL345_AXIS_DATAS_NOT_READY,
+//////////////	//																.rawZData = ADXL345_AXIS_DATAS_NOT_READY };
+//////////////	//
+//////////////	//ADXL345_InterruptReg intReg = ADXL345_GetInterruptStatus(ADXL345);
+//////////////	//
+//////////////	//if(intReg.BIT.dataReady == true)
+//////////////	//{
+//////////////	//	// TODO:BURADA X Y Z IÇIN AYRI OKUM KISIMLARINI DA EKLE
+//////////////	//}
+//////////////	//
+//////////////	
+//////////////
+//////////////}

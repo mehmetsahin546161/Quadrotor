@@ -59,6 +59,8 @@
 #define 	ADXL345_AXIS_COUNT								0x03
 #define 	ADXL345_REG_MSB_BIT								7
 #define 	ADXL345_AXIS_DATAS_NOT_READY			((float)(0xDEAD))
+	
+#define 	ADXL345_REGISTER_SIZE							1		//1-Byte
 /* Exported macros -----------------------------------------------------------*/
 //#define 	I2C_READ_DEV_ADDR(I2C_ADDR)	 		( (I2C_ADDR<<1)&(~0x01) )
 //#define 	I2C_WRITE_DEV_ADDR(I2C_ADDR)	 	( (I2C_ADDR<<1)|( 0x01) )
@@ -83,9 +85,6 @@ typedef struct
 {
 	I2C_HandleTypeDef * i2cHandle;
 	uint8_t 						i2cDevAddr;
-	
-	uint8_t memWrite;
-	uint8_t memRead;
 	
 }ADXL345_HandleTypeDef;
 
@@ -143,59 +142,38 @@ typedef struct
 
 
 /* Exported functions --------------------------------------------------------*/
-//void 											ADXL345_SW_Init									(void);
-//uint8_t 									ADXL345_WhoAmI									(ADXL345_HandleTypeDef * ADXL345);
-//void 											ADXL345_SetTapThreshold					(ADXL345_HandleTypeDef * ADXL345, double tapThresh);
-//double 										ADXL345_GetTapThreshold					(ADXL345_HandleTypeDef * ADXL345);
-//void    									ADXL345_SetOffset								(ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis, double offset);
-//double										ADXL345_GetOffset								(ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis);
-//void 											ADXL345_SetMaxTapDuration				(ADXL345_HandleTypeDef * ADXL345, uint32_t maxTapDur);
-//uint32_t 									ADXL345_GetMaxTapDuration				(ADXL345_HandleTypeDef * ADXL345);
-//void 											ADXL345_SetLatencyTime					(ADXL345_HandleTypeDef * pADXL345, double dLatTime);
-//double 										ADXL345_GetLatencyTime					(ADXL345_HandleTypeDef * pADXL345);
-//void 											ADXL345_SetWindowTime						(ADXL345_HandleTypeDef * pADXL345, double dWinTime);
-//double 										ADXL345_GetWindowTime						(ADXL345_HandleTypeDef * pADXL345);
-//void 											ADXL345_SetActivityThreshold		(ADXL345_HandleTypeDef * pADXL345, double dActThresh);
-//double 										ADXL345_GetActivityThreshold		(ADXL345_HandleTypeDef * pADXL345);
-//void 											ADXL345_SetInactivityThreshold	(ADXL345_HandleTypeDef * pADXL345, double dInactThresh);
-//double 										ADXL345_GetInactivityThreshold	(ADXL345_HandleTypeDef * pADXL345);
-//void 											ADXL345_SetInactivityTime				(ADXL345_HandleTypeDef * pADXL345, double dMinInactTime);
-//double 										ADXL345_GetInactivityTime				(ADXL345_HandleTypeDef * pADXL345);
-//void 											ADXL345_SetInactivityTime				(ADXL345_HandleTypeDef * pADXL345, double dMinInactTime);
-//double 										ADXL345_GetInactivityTime				(ADXL345_HandleTypeDef * pADXL345);
-//void 											ADXL345_ConfigInterrupts				(ADXL345_HandleTypeDef * pADXL345, ADXL345_InterruptReg unIntReg);
-//ADXL345_InterruptReg 		ADXL345_GetInterruptStatus			(ADXL345_HandleTypeDef * pADXL345);
-//void 											ADXL345_MapInterruptPins				(ADXL345_HandleTypeDef * pADXL345, ADXL345_InterruptReg pinMap[ADXL345_INT_PIN_CNT]);
-//ADXL345_RawDatas					ADXL345_GetRawDatas							(ADXL345_HandleTypeDef * pADXL345);
+void 											ADXL345_SW_Init									(void);
+uint8_t 									ADXL345_WhoAmI									(ADXL345_HandleTypeDef * ADXL345);
 
+void 											ADXL345_SetTapThreshold					(ADXL345_HandleTypeDef * ADXL345, double tapThresh);
+double 										ADXL345_GetTapThreshold					(ADXL345_HandleTypeDef * ADXL345);
 
+void    									ADXL345_SetOffset								(ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis, double offset);
+double										ADXL345_GetOffset								(ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis);
 
-void  ADXL345_SW_Init									(void);
-void  ADXL345_WhoAmI									(ADXL345_HandleTypeDef * ADXL345);
-void  ADXL345_SetTapThreshold					(ADXL345_HandleTypeDef * ADXL345, double tapThresh);
-void  ADXL345_GetTapThreshold					(ADXL345_HandleTypeDef * ADXL345);
-void  ADXL345_SetOffset								(ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis, double offset);
-void  ADXL345_GetOffset								(ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis);
-void  ADXL345_SetMaxTapDuration				(ADXL345_HandleTypeDef * ADXL345, uint32_t maxTapDur);
-void  ADXL345_GetMaxTapDuration				(ADXL345_HandleTypeDef * ADXL345);
-void  ADXL345_SetLatencyTime					(ADXL345_HandleTypeDef * pADXL345, double dLatTime);
-void  ADXL345_GetLatencyTime					(ADXL345_HandleTypeDef * pADXL345);
-void  ADXL345_SetWindowTime						(ADXL345_HandleTypeDef * pADXL345, double dWinTime);
-void  ADXL345_GetWindowTime						(ADXL345_HandleTypeDef * pADXL345);
-void  ADXL345_SetActivityThreshold		(ADXL345_HandleTypeDef * pADXL345, double dActThresh);
-void  ADXL345_GetActivityThreshold		(ADXL345_HandleTypeDef * pADXL345);
-void  ADXL345_SetInactivityThreshold	(ADXL345_HandleTypeDef * pADXL345, double dInactThresh);
-void  ADXL345_GetInactivityThreshold	(ADXL345_HandleTypeDef * pADXL345);
-void  ADXL345_SetInactivityTime				(ADXL345_HandleTypeDef * pADXL345, double dMinInactTime);
-void  ADXL345_GetInactivityTime				(ADXL345_HandleTypeDef * pADXL345);
-void  ADXL345_SetInactivityTime				(ADXL345_HandleTypeDef * pADXL345, double dMinInactTime);
-void  ADXL345_GetInactivityTime				(ADXL345_HandleTypeDef * pADXL345);
-void  ADXL345_ConfigInterrupts				(ADXL345_HandleTypeDef * pADXL345, ADXL345_InterruptReg unIntReg);
-void  ADXL345_GetInterruptStatus			(ADXL345_HandleTypeDef * pADXL345);
-void  ADXL345_MapInterruptPins				(ADXL345_HandleTypeDef * pADXL345, ADXL345_InterruptReg pinMap[ADXL345_INT_PIN_CNT]);
-void  ADXL345_GetRawDatas							(ADXL345_HandleTypeDef * pADXL345);
+void 											ADXL345_SetMaxTapDuration				(ADXL345_HandleTypeDef * ADXL345, uint32_t maxTapDur);
+uint32_t 									ADXL345_GetMaxTapDuration				(ADXL345_HandleTypeDef * ADXL345);
 
+void 											ADXL345_SetLatencyTime					(ADXL345_HandleTypeDef * ADXL345, double latTime);
+double 										ADXL345_GetLatencyTime					(ADXL345_HandleTypeDef * ADXL345);
 
+void 											ADXL345_SetWindowTime						(ADXL345_HandleTypeDef * ADXL345, double winTime);
+double 										ADXL345_GetWindowTime						(ADXL345_HandleTypeDef * ADXL345);
+
+void 											ADXL345_SetActivityThreshold		(ADXL345_HandleTypeDef * ADXL345, double actThresh);
+double 										ADXL345_GetActivityThreshold		(ADXL345_HandleTypeDef * ADXL345);
+
+void 											ADXL345_SetInactivityThreshold	(ADXL345_HandleTypeDef * ADXL345, double inactThresh);
+double 										ADXL345_GetInactivityThreshold	(ADXL345_HandleTypeDef * ADXL345);
+
+void 											ADXL345_SetInactivityTime				(ADXL345_HandleTypeDef * ADXL345, uint8_t minInactTime);
+uint8_t 									ADXL345_GetInactivityTime				(ADXL345_HandleTypeDef * ADXL345);
+
+void 											ADXL345_ConfigInterrupts				(ADXL345_HandleTypeDef * ADXL345, ADXL345_InterruptReg intReg);
+ADXL345_InterruptReg 			ADXL345_GetInterruptStatus			(ADXL345_HandleTypeDef * ADXL345);
+
+void 											ADXL345_MapInterruptPins				(ADXL345_HandleTypeDef * ADXL345, ADXL345_InterruptReg pinMap[ADXL345_INT_PIN_CNT]);
+ADXL345_RawDatas					ADXL345_GetRawDatas							(ADXL345_HandleTypeDef * ADXL345);
 
 
 
