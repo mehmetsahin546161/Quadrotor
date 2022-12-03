@@ -6,10 +6,10 @@
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_i2c.h"
 #include <stdbool.h>
+#include "defines.h"
 
 /* Exported constants --------------------------------------------------------*/
-#define 	INVALID_DATA											0x00
-						
+				
 #define 	I2C_DEV_ADDR_GND  								0x53			//Not shifted
 #define 	I2C_DEV_ADDR_VCC  								0x1D			//Not shifted
 	
@@ -60,7 +60,13 @@
 #define 	ADXL345_REG_MSB_BIT								7
 #define 	ADXL345_AXIS_DATAS_NOT_READY			((float)(0xDEAD))
 	
-#define 	ADXL345_REGISTER_SIZE							1		//1-Byte
+#define 	ADXL345_1BYTE_REGISTER						1		//1-Byte
+#define 	ADXL345_DATA_REGISTER_SIZE				6		//6-Byte
+
+#define   ADXL345_START_OF_DATA_REGS 				DATAX0
+#define 	ADXL345_RESET_ALL_INTERRUPTS 			0x00
+#define 	ADXL345_SET_ALL_INTERRUPTS				0xFF
+
 /* Exported macros -----------------------------------------------------------*/
 //#define 	I2C_READ_DEV_ADDR(I2C_ADDR)	 		( (I2C_ADDR<<1)&(~0x01) )
 //#define 	I2C_WRITE_DEV_ADDR(I2C_ADDR)	 	( (I2C_ADDR<<1)|( 0x01) )
@@ -75,11 +81,13 @@ typedef enum
 
 typedef enum
 {
-	X_AXIS,
-	Y_AXIS,
-	Z_AXIS
+	ADXL345_X_AXIS,
+	ADXL345_Y_AXIS,
+	ADXL345_Z_AXIS
 
 }ADXL345_Axis;
+
+
 
 typedef struct
 {
@@ -88,42 +96,43 @@ typedef struct
 	
 }ADXL345_HandleTypeDef;
 
-typedef enum
+typedef union
 {
-	RESET_ALL_INTERRUPTS = 0x00,
+	struct
+	{
+		bool overrun:1;
+		bool watermark:1;
+		bool freefall:1;
+		bool inactivity:1;
+		bool activity:1;
+		bool doubleTap:1;
+		bool singleTap:1;
+		bool dataReady:1;
+		
+	}BIT;
 	
-	OVERRUN 			= 0x01,
-	WATERMARK 		= 0x02,
-	FREEFALL 			= 0x04,
-	INACTIVITY 		= 0x08,
-	ACTIVITY			= 0x10,
-	DOUBLE_TAP		= 0x20,
-	SINGLE_TAP		= 0x40,
-	DATA_READY		= 0x80,
+	uint8_t	BYTE;
 	
-	SET_ALL_INTERRUPTS = 0xFF,
-	
-}ADXL345_Interrupts;
-
-typedef struct
-{
-	bool overrun:1;
-	bool watermark:1;
-	bool freefall:1;
-	bool inactivity:1;
-	bool activity:1;
-	bool doubleTap:1;
-	bool singleTap:1;
-	bool dataReady:1;
-	
-}ADXL345_InterruptBits;
+}ADXL345_InterruptReg;
 
 typedef union
 {
-	ADXL345_InterruptBits 	BIT;
-	uint8_t 								BYTE;
+	struct
+	{
+		uint8_t range:2;
+		bool justify:1;
+		bool fullRes:1;
+		bool dummy:1;
+		bool intInvert:1;
+		bool spi:1;
+		bool selfTest:1;
 	
-}ADXL345_InterruptReg;
+	}BIT;
+	
+	uint8_t	BYTE;
+
+}ADXL345_DataFormatReg;
+
 
 typedef enum
 {
@@ -140,43 +149,52 @@ typedef struct
 
 }ADXL345_RawDatas;
 
+typedef enum
+{
+	ADXL345_2G_RANGE = 0,
+	ADXL345_4G_RANGE = 1,
+	ADXL345_8G_RANGE = 2,
+	ADXL345_16G_RANGE = 3,
+
+}ADXL345_G_Range;
 
 /* Exported functions --------------------------------------------------------*/
-void 											ADXL345_SW_Init									(void);
-uint8_t 									ADXL345_WhoAmI									(ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_Init(void);
 
-void 											ADXL345_SetTapThreshold					(ADXL345_HandleTypeDef * ADXL345, double tapThresh);
-double 										ADXL345_GetTapThreshold					(ADXL345_HandleTypeDef * ADXL345);
+uint8_t ADXL345_WhoAmI(const ADXL345_HandleTypeDef * ADXL345);
 
-void    									ADXL345_SetOffset								(ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis, double offset);
-double										ADXL345_GetOffset								(ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis);
+void ADXL345_SetTapThreshold(const ADXL345_HandleTypeDef * ADXL345, double tapThresh);
+double ADXL345_GetTapThreshold(const ADXL345_HandleTypeDef * ADXL345);
 
-void 											ADXL345_SetMaxTapDuration				(ADXL345_HandleTypeDef * ADXL345, uint32_t maxTapDur);
-uint32_t 									ADXL345_GetMaxTapDuration				(ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_SetOffset(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis, double offset);
+double ADXL345_GetOffset(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis);
 
-void 											ADXL345_SetLatencyTime					(ADXL345_HandleTypeDef * ADXL345, double latTime);
-double 										ADXL345_GetLatencyTime					(ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_SetMaxTapDuration(const ADXL345_HandleTypeDef * ADXL345, uint32_t maxTapDur);
+uint32_t ADXL345_GetMaxTapDuration(const ADXL345_HandleTypeDef * ADXL345);
 
-void 											ADXL345_SetWindowTime						(ADXL345_HandleTypeDef * ADXL345, double winTime);
-double 										ADXL345_GetWindowTime						(ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_SetLatencyTime(const ADXL345_HandleTypeDef * ADXL345, double latTime);
+double ADXL345_GetLatencyTime(const ADXL345_HandleTypeDef * ADXL345);
 
-void 											ADXL345_SetActivityThreshold		(ADXL345_HandleTypeDef * ADXL345, double actThresh);
-double 										ADXL345_GetActivityThreshold		(ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_SetWindowTime(const ADXL345_HandleTypeDef * ADXL345, double winTime);
+double ADXL345_GetWindowTime(const ADXL345_HandleTypeDef * ADXL345);
 
-void 											ADXL345_SetInactivityThreshold	(ADXL345_HandleTypeDef * ADXL345, double inactThresh);
-double 										ADXL345_GetInactivityThreshold	(ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_SetActivityThreshold(const ADXL345_HandleTypeDef * ADXL345, double actThresh);
+double ADXL345_GetActivityThreshold(const ADXL345_HandleTypeDef * ADXL345);
 
-void 											ADXL345_SetInactivityTime				(ADXL345_HandleTypeDef * ADXL345, uint8_t minInactTime);
-uint8_t 									ADXL345_GetInactivityTime				(ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_SetInactivityThreshold(const ADXL345_HandleTypeDef * ADXL345, double inactThresh);
+double ADXL345_GetInactivityThreshold(const ADXL345_HandleTypeDef * ADXL345);
 
-void 											ADXL345_ConfigInterrupts				(ADXL345_HandleTypeDef * ADXL345, ADXL345_InterruptReg intReg);
-ADXL345_InterruptReg 			ADXL345_GetInterruptStatus			(ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_SetInactivityTime(const ADXL345_HandleTypeDef * ADXL345, uint8_t minInactTime);
+uint8_t ADXL345_GetInactivityTime(const ADXL345_HandleTypeDef * ADXL345);
 
-void 											ADXL345_MapInterruptPins				(ADXL345_HandleTypeDef * ADXL345, ADXL345_InterruptReg pinMap[ADXL345_INT_PIN_CNT]);
-ADXL345_RawDatas					ADXL345_GetRawDatas							(ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_ConfigInterrupts(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_InterruptReg * intReg);
+void ADXL345_GetInterruptStatus(const ADXL345_HandleTypeDef * ADXL345, ADXL345_InterruptReg * intReg);
 
+void ADXL345_MapInterruptPins(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_InterruptReg * pinMap);
+DataStatus ADXL345_GetRawDatas(const ADXL345_HandleTypeDef * ADXL345, ADXL345_RawDatas * rawDatas);
 
-
+void ADXL345_SetDataFormat(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_DataFormatReg * dataFormat);
+void ADXL345_GetDataFormat(const ADXL345_HandleTypeDef * ADXL345, ADXL345_DataFormatReg * dataFormat);
 
 
 

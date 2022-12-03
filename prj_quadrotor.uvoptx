@@ -152,9 +152,9 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>206</LineNumber>
+          <LineNumber>203</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134241608</Address>
+          <Address>134241450</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -163,40 +163,35 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>.\RTE\Device\STM32F407VGTx\STCubeGenerated\Src\main.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\prj_quadrotor\RTE/Device/STM32F407VGTx/STCubeGenerated/Src/main.c\206</Expression>
+          <Expression>\\prj_quadrotor\RTE/Device/STM32F407VGTx/STCubeGenerated/Src/main.c\203</Expression>
         </Bp>
         <Bp>
           <Number>1</Number>
           <Type>0</Type>
-          <LineNumber>207</LineNumber>
+          <LineNumber>203</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>0</Address>
+          <Address>134241486</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
           <SizeOfObject>0</SizeOfObject>
           <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>0</BreakIfRCount>
+          <BreakIfRCount>1</BreakIfRCount>
           <Filename>.\RTE\Device\STM32F407VGTx\STCubeGenerated\Src\main.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression></Expression>
+          <Expression>\\prj_quadrotor\RTE/Device/STM32F407VGTx/STCubeGenerated/Src/main.c\203</Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-          <ItemText>v2</ItemText>
+          <ItemText>rawDatas</ItemText>
         </Ww>
         <Ww>
           <count>1</count>
           <WinNumber>1</WinNumber>
-          <ItemText>v1</ItemText>
-        </Ww>
-        <Ww>
-          <count>2</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>retVal</ItemText>
+          <ItemText>intReg</ItemText>
         </Ww>
       </WatchWindow1>
       <MemoryWindow1>
@@ -449,11 +444,23 @@
   </Group>
 
   <Group>
-    <GroupName>New Group4</GroupName>
-    <tvExp>0</tvExp>
+    <GroupName>Common</GroupName>
+    <tvExp>1</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
+    <File>
+      <GroupNumber>6</GroupNumber>
+      <FileNumber>13</FileNumber>
+      <FileType>5</FileType>
+      <tvExp>0</tvExp>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>.\Source\Common\Inc\defines.h</PathWithFileName>
+      <FilenameWithoutPath>defines.h</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
   </Group>
 
   <Group>

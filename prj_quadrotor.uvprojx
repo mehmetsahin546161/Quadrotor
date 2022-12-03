@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>.\Source\Inputs\Inc;.\Source\Inputs\Sensors\Inc</IncludePath>
+              <IncludePath>.\Source\Inputs\Inc;.\Source\Inputs\Sensors\Inc;.\Source\Common\Inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -464,7 +464,14 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>New Group4</GroupName>
+          <GroupName>Common</GroupName>
+          <Files>
+            <File>
+              <FileName>defines.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Source\Common\Inc\defines.h</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>New Group</GroupName>

@@ -194,19 +194,16 @@ void app_main (void* arg)
 {
 	COM_Input_Init();
 
-	ADXL345_SetInactivityTime(&ADXL345, 48);
-	ADXL345_SetInactivityThreshold(&ADXL345, 135.2);
+	ADXL345_InterruptReg intReg =ADXL345_GetInterruptStatus(&ADXL345);
 	
-
-
-
-	double v2 = ADXL345_GetInactivityThreshold(&ADXL345);
-	double v1 = ADXL345_GetInactivityTime(&ADXL345);
+	
+	ADXL345_RawDatas rawDatas;
 
 
 	while(true)
 	{
-	
+		rawDatas =  ADXL345_GetRawDatas(&ADXL345);
+		osDelay(500);
 	}
 }
 /* USER CODE END 4 */

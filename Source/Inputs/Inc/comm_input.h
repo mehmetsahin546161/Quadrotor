@@ -17,6 +17,7 @@
 #define COM_INPUT_MAX_TX_TIM		100				//100ms
 #define COM_INPUT_MAX_RX_TIM		100				//100ms
 
+#define COM_INPUT_MAX_SEQU_READ_SIZE				6
 /* Exported types ------------------------------------------------------------*/
 typedef struct
 {
@@ -26,7 +27,7 @@ typedef struct
 	uint16_t  DevAddress;
 	uint16_t  MemAddress;
 	uint16_t  MemAddSize;
-	uint8_t   Data;
+	uint8_t   Data[COM_INPUT_MAX_SEQU_READ_SIZE];
 	uint16_t  Size;
 
 }COM_Input_DataTypeDef;

@@ -194,7 +194,7 @@ static void COM_Input_SendThread(void* arg)
 															 sendMsg.DevAddress,
 															 sendMsg.MemAddress, 
 															 sendMsg.MemAddSize,
-															 &sendMsg.Data, 
+															 sendMsg.Data, 
 															 sendMsg.Size );
 			
 				osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_COMPLETED, osFlagsWaitAll, osWaitForever);
@@ -246,7 +246,7 @@ static void COM_Input_ReceiveThread(void* arg)
 															receivedMsg.DevAddress,
 															receivedMsg.MemAddress, 
 															receivedMsg.MemAddSize,
-															&receivedMsg.Data, 
+															receivedMsg.Data, 
 															receivedMsg.Size );
 			
 				osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_COMPLETED, osFlagsWaitAll, osWaitForever);
