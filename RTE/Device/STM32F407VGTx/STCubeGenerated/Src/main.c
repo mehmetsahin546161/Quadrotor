@@ -53,8 +53,8 @@
 
 /* USER CODE BEGIN PV */
 extern I2C_HandleTypeDef hi2c1;
-ADXL345_HandleTypeDef ADXL345 = {	.i2cHandle = &hi2c1,
-																	.i2cDevAddr = I2C_DEV_ADDR_GND };
+const ADXL345_HandleTypeDef ADXL345 = {	.i2cHandle = &hi2c1,
+																				.i2cDevAddr = I2C_DEV_ADDR_GND };
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -194,16 +194,31 @@ void app_main (void* arg)
 {
 	COM_Input_Init();
 
-	ADXL345_InterruptReg intReg =ADXL345_GetInterruptStatus(&ADXL345);
+	uint8_t me = ADXL345_WhoAmI(&ADXL345);
+	
+	const ADXL345_DataFormatReg setDataFormat = 
+	{ 
+		.BIT.range = ADXL345_16G_RANGE,
+		.BIT.justify = ADXL345_RIGHT_JUSTIFIED, 
+		.BIT.fullRes = ADXL345_FULL_RES_DISABLED,
+		.BIT.intInvert = ADXL345_INTERRUPT_ACTIVE_HIGH
+	};
+	ADXL345_SetDataFormat(&ADXL345, &setDataFormat);
+	
+	const ADXL345_PowerCtrReg setPowerControl = 
+	{
+		.BIT.sleep = ADXL345_NORMAL_MODE,
+		.BIT.meausure = ADXL345_MEASUREMENT_MODE
+	};
+	ADXL345_SetPowerControl(&ADXL345, &setPowerControl);
 	
 	
+	DataStatus readStatus;
 	ADXL345_RawDatas rawDatas;
-
 
 	while(true)
 	{
-		rawDatas =  ADXL345_GetRawDatas(&ADXL345);
-		osDelay(500);
+		readStatus = ADXL345_GetRawDatas(&ADXL345, &rawDatas);
 	}
 }
 /* USER CODE END 4 */

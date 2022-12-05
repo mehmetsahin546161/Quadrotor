@@ -59,9 +59,6 @@
 #define 	ADXL345_AXIS_COUNT								0x03
 #define 	ADXL345_REG_MSB_BIT								7
 #define 	ADXL345_AXIS_DATAS_NOT_READY			((float)(0xDEAD))
-	
-#define 	ADXL345_1BYTE_REGISTER						1		//1-Byte
-#define 	ADXL345_DATA_REGISTER_SIZE				6		//6-Byte
 
 #define   ADXL345_START_OF_DATA_REGS 				DATAX0
 #define 	ADXL345_RESET_ALL_INTERRUPTS 			0x00
@@ -87,7 +84,12 @@ typedef enum
 
 }ADXL345_Axis;
 
+typedef enum
+{
+	ADXL345_INT1	= 0,
+	ADXL345_INT2 	= 1
 
+}ADXL345_InterruptPin;
 
 typedef struct
 {
@@ -115,25 +117,6 @@ typedef union
 	
 }ADXL345_InterruptReg;
 
-typedef union
-{
-	struct
-	{
-		uint8_t range:2;
-		bool justify:1;
-		bool fullRes:1;
-		bool dummy:1;
-		bool intInvert:1;
-		bool spi:1;
-		bool selfTest:1;
-	
-	}BIT;
-	
-	uint8_t	BYTE;
-
-}ADXL345_DataFormatReg;
-
-
 typedef enum
 {
 	ADXL345_INT1_PIN = 0,
@@ -158,8 +141,118 @@ typedef enum
 
 }ADXL345_G_Range;
 
+typedef enum
+{
+	ADXL345_RIGHT_JUSTIFIED = 0,
+	ADXL345_LEFT_JUSTIFIED 	= 1,
+
+}ADXL345_JustifyMode;
+
+typedef enum
+{
+	ADXL345_FULL_RES_DISABLED = 0,
+	ADXL345_FULL_RES_ENABLED = 1,
+
+}ADXL345_FullRes;
+
+typedef enum
+{
+	ADXL345_INTERRUPT_ACTIVE_HIGH = 0,
+	ADXL345_INTERRUPT_ACTIVE_LOW = 1,
+	
+}ADXL345_InterruptInvert;
+
+typedef enum
+{
+	ADXL345_4_WIRE_SPI = 0,
+	ADXL345_3_WIRE_SPI = 0,
+
+}ADXL345_SPI_Mode;
+
+typedef enum
+{
+	ADXL345_DISABLE_SELF_TEST = 0,
+	ADXL345_ENABLE_SELF_TEST = 1,
+	
+}ADXL345_SelfTest;
+
+typedef union
+{
+	struct
+	{
+		ADXL345_G_Range range:2;
+		ADXL345_JustifyMode justify:1;
+		ADXL345_FullRes fullRes:1;
+		bool dummy:1;
+		ADXL345_InterruptInvert intInvert:1;
+		ADXL345_SPI_Mode spi:1;
+		ADXL345_SelfTest selfTest:1;
+	
+	}BIT;
+	
+	uint8_t	BYTE;
+
+}ADXL345_DataFormatReg;
+
+
+typedef enum
+{
+	ADXL345_STANDBY_MODE = 0,
+	ADXL345_MEASUREMENT_MODE = 1,
+
+}ADXL345_WorkingMode;
+
+typedef enum
+{
+	ADXL345_AUTO_SLEEP_DISABLED = 0,
+	ADXL345_AUTO_SLEEP_ENABLED = 1,
+
+}ADXL345_AutoSleepMode;
+
+typedef enum
+{
+	ADXL345_ACT_INACT_NOT_LINKED = 0,
+	ADXL345_ACT_INACT_LINKED = 1,
+
+}ADXL345_LinkMode;
+
+typedef enum
+{
+	ADXL345_NORMAL_MODE = 0,
+	ADXL345_SLEEP_MODE	= 1
+
+}ADXL345_PowerMode;
+
+typedef enum
+{
+	ADXL345_SLEEP_MODE_8HZ = 0,
+	ADXL345_SLEEP_MODE_4HZ = 1,
+	ADXL345_SLEEP_MODE_2HZ = 2,
+	ADXL345_SLEEP_MODE_1HZ = 3,
+
+}ADXL345_SleepModeFreq;
+
+typedef union
+{
+	struct
+	{
+		ADXL345_SleepModeFreq wakeup:2;
+		ADXL345_PowerMode	sleep:1;
+		ADXL345_WorkingMode meausure:1;
+		ADXL345_AutoSleepMode autoSleep:1;
+		ADXL345_LinkMode link:1;
+		uint8_t dummy:2;
+		
+	}BIT;
+	
+	uint8_t	BYTE;
+
+}ADXL345_PowerCtrReg;
+
 /* Exported functions --------------------------------------------------------*/
 void ADXL345_Init(void);
+
+
 
 uint8_t ADXL345_WhoAmI(const ADXL345_HandleTypeDef * ADXL345);
 
@@ -190,14 +283,14 @@ uint8_t ADXL345_GetInactivityTime(const ADXL345_HandleTypeDef * ADXL345);
 void ADXL345_ConfigInterrupts(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_InterruptReg * intReg);
 void ADXL345_GetInterruptStatus(const ADXL345_HandleTypeDef * ADXL345, ADXL345_InterruptReg * intReg);
 
-void ADXL345_MapInterruptPins(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_InterruptReg * pinMap);
+void ADXL345_MapInterruptPins(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_InterruptReg pinMap);
 DataStatus ADXL345_GetRawDatas(const ADXL345_HandleTypeDef * ADXL345, ADXL345_RawDatas * rawDatas);
 
 void ADXL345_SetDataFormat(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_DataFormatReg * dataFormat);
 void ADXL345_GetDataFormat(const ADXL345_HandleTypeDef * ADXL345, ADXL345_DataFormatReg * dataFormat);
 
-
-
+void ADXL345_SetPowerControl(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_PowerCtrReg * powerControl);
+void ADXL345_GetPowerControl(const ADXL345_HandleTypeDef * ADXL345, ADXL345_PowerCtrReg * powerControl);
 
 
 

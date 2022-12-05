@@ -2,23 +2,98 @@
 #include 	"cmsis_os2.h"
 #include 	"comm_input.h"
 #include	"defines.h"
-
+#include   "calc.h"
 
 /* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
+/* Private types -------------------------------------------------------------*/
+typedef struct
+{
+	uint8_t data[COM_INPUT_MAX_MULTI_BYTE];
+	uint8_t dataSize;
+	uint8_t memAddress;
+
+}ADXL345_ComDataTypeDef;
+
+
 /* Private function prototypes -----------------------------------------------*/
+static void ADXL345_RegisterSetter(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_ComDataTypeDef * setter);
+static void ADXL345_RegisterGetter(const ADXL345_HandleTypeDef * ADXL345, ADXL345_ComDataTypeDef * getter);
+
+/* Private functions ---------------------------------------------------------*/
+
+/**
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  */
+static void ADXL345_RegisterSetter(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_ComDataTypeDef * setter)
+{
+	osMutexAcquire(MTX_comInputTx, osWaitForever);
+		
+	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
+																		.DevAddress = ADXL345->i2cDevAddr << 1,
+																		.MemAddress	= setter->memAddress,
+																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																		.Size = setter->dataSize };
+	
+	/* Multi-Byte initialization is not valid */
+	for(uint8_t sizeCnt=0; sizeCnt<setter->dataSize; sizeCnt++)
+	{
+		sendMsg.Data[sizeCnt] = (setter->data)[sizeCnt];
+	}
+	
+	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
+	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
+																		
+	osMutexRelease(MTX_comInputTx);	
+
+}
+
+/**
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  */
+static void ADXL345_RegisterGetter(const ADXL345_HandleTypeDef * ADXL345, ADXL345_ComDataTypeDef * getter)
+{
+	osMutexAcquire(MTX_comInputRx, osWaitForever);
+	
+	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
+																				.DevAddress = ADXL345->i2cDevAddr << 1,
+																				.MemAddress	= getter->memAddress  ,
+																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																				.Size =  getter->dataSize};
+	
+	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
+	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
+	
+	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
+	
+	for(uint8_t sizeCnt=0; sizeCnt<getter->dataSize; sizeCnt++)
+	{
+		(getter->data)[sizeCnt] = receivedMsg.Data[sizeCnt];
+	}
+	
+	osMutexRelease(MTX_comInputRx);
+}
 
 /* Exported functions --------------------------------------------------------*/
 
 /**
-  * @brief  None
-  * @param  None
-  * @param  None
-  * @retval None
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
   */
 void ADXL345_Init(void)
 {
-	
+
 	
 	
 }
@@ -30,25 +105,15 @@ void ADXL345_Init(void)
   */
 uint8_t ADXL345_WhoAmI(const ADXL345_HandleTypeDef * ADXL345)
 {
-	osMutexAcquire(MTX_comInputRx, osWaitForever);
+	ADXL345_ComDataTypeDef comData =
+	{
+		.dataSize = 1,
+		.memAddress = DEVID
+	};
 	
-	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
-																				.DevAddress = ADXL345->i2cDevAddr << 1,
-																				.MemAddress	= DEVID,
-																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																				.Size = ADXL345_1BYTE_REGISTER };
-	
-	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
-	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
-	
-	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
-	
-	osMutexRelease(MTX_comInputRx);
-																				
-	return receivedMsg.Data[0];
-
+	ADXL345_RegisterGetter(ADXL345, &comData);
+											
+	return comData.data[0];
 }
 
 /**
@@ -61,25 +126,18 @@ uint8_t ADXL345_WhoAmI(const ADXL345_HandleTypeDef * ADXL345)
   */
 void ADXL345_SetTapThreshold(const ADXL345_HandleTypeDef * ADXL345, double tapThresh)
 {
-	if( (tapThresh>=0) && (tapThresh<=16) )
+	if( (tapThresh>=0) && (tapThresh<=16000) )
 	{
 		uint8_t sendVal = (1.0/TAP_THRESH_SCALE_FACTOR)*tapThresh;
 		
-		osMutexAcquire(MTX_comInputTx, osWaitForever);
+		const ADXL345_ComDataTypeDef comData =
+		{
+			.data[0] = sendVal,
+			.dataSize = 1,
+			.memAddress = THRESH_TAP
+		};
 		
-		COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
-																			.DevAddress = ADXL345->i2cDevAddr << 1,
-																			.MemAddress	= THRESH_TAP,
-																			.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																			.Data[0] = sendVal,
-																			.Size = ADXL345_1BYTE_REGISTER };
-		
-		osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
-					
-		osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
-		osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
-																			
-		osMutexRelease(MTX_comInputTx);	
+		ADXL345_RegisterSetter(ADXL345, &comData);
 	}
 }
 
@@ -92,24 +150,15 @@ void ADXL345_SetTapThreshold(const ADXL345_HandleTypeDef * ADXL345, double tapTh
   */
 double ADXL345_GetTapThreshold(const ADXL345_HandleTypeDef * ADXL345)
 {
-	osMutexAcquire(MTX_comInputRx, osWaitForever);
+	ADXL345_ComDataTypeDef comData =
+	{
+		.dataSize = 1,
+		.memAddress = THRESH_TAP
+	};
 	
-	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
-																				.DevAddress = ADXL345->i2cDevAddr << 1,
-																				.MemAddress	= THRESH_TAP,
-																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																				.Size = ADXL345_1BYTE_REGISTER };
-	
-	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
-	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
-	
-	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
-	
-	osMutexRelease(MTX_comInputRx);
-																				
-	return (receivedMsg.Data[0])*TAP_THRESH_SCALE_FACTOR;
+	ADXL345_RegisterGetter(ADXL345, &comData);
+											
+	return (comData.data[0])*TAP_THRESH_SCALE_FACTOR;
 }
 
 /**
@@ -122,33 +171,26 @@ double ADXL345_GetTapThreshold(const ADXL345_HandleTypeDef * ADXL345)
   */
 void ADXL345_SetOffset(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis, double offset)
 {
-	if( (offset<=2) && (offset>=-2) )
+	if( (offset<=2000) && (offset>=-2000) )
 	{
 		uint8_t sendVal = (offset<0) ? (uint8_t)(~((uint8_t)(-1*offset*(1.0/OFFSET_SCALE_FACTOR)))) + 1 :
 											(offset>0) ? (offset*(1.0/OFFSET_SCALE_FACTOR))	:	0;
 		
-		uint8_t memAddress = (axis==X_AXIS) ? OFSX :
-												 (axis==Y_AXIS) ? OFSY :
-												 (axis==Z_AXIS) ? OFSZ :
+		uint8_t memAddress = (axis==ADXL345_X_AXIS) ? OFSX :
+												 (axis==ADXL345_Y_AXIS) ? OFSY :
+												 (axis==ADXL345_Z_AXIS) ? OFSZ :
 																					INVALID_DATA;
 		
 		if(memAddress != INVALID_DATA)
 		{
-			osMutexAcquire(MTX_comInputTx, osWaitForever);
-			
-			COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
-																				.DevAddress = ADXL345->i2cDevAddr << 1,
-																				.MemAddress	= memAddress,
-																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																				.Data[0] = sendVal,
-																				.Size = ADXL345_1BYTE_REGISTER };
+			const ADXL345_ComDataTypeDef comData =
+			{
+				.data[0] = sendVal,
+				.dataSize = 1,
+				.memAddress = memAddress
+			};
 		
-			osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
-						
-			osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
-			osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
-																				
-			osMutexRelease(MTX_comInputTx);	
+			ADXL345_RegisterSetter(ADXL345, &comData);
 		}
 	}
 }
@@ -156,7 +198,6 @@ void ADXL345_SetOffset(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis,
 /**
   * @brief  		The OFSX, OFSY, and OFSZ registers are each eight bits and offer user-set offset adjustments in twos complement format 
 	*							with a scale factor of 15.6 mg/LSB (that is, 0x7F = +2 g)
-	*	@note				2'complement simply inverts each bit of given binary number, which will be 01010001. Then add 1 to the LSB of this result
 	*	@param[IN]  ADXL345 	Sensor handler.
   * @param[IN]  eAxis 		The axes whose offset is queued
   * @retval 		Offset value represented in mg unit.
@@ -169,27 +210,18 @@ double ADXL345_GetOffset(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axi
 		
 	if(memAddress != INVALID_DATA)
 	{
-		osMutexAcquire(MTX_comInputRx, osWaitForever);
-		
-		COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
-																				.DevAddress = ADXL345->i2cDevAddr << 1,
-																				.MemAddress	= memAddress,
-																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																				.Size = ADXL345_1BYTE_REGISTER };
+		ADXL345_ComDataTypeDef comData =
+		{
+			.dataSize = 1,
+			.memAddress = memAddress
+		};
 	
-		osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
-					
-		osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
-		osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
-		
-		osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
-	
-		osMutexRelease(MTX_comInputRx);											
+		ADXL345_RegisterGetter(ADXL345, &comData);
 																				
 		/* Check MSB bit to find the sign of the value. */
-		double offsetVal = 	((receivedMsg.Data[0]) & (1<<ADXL345_REG_MSB_BIT)) ?
-													(-1.0*( (uint8_t)( ~(receivedMsg.Data[0]-1) )*OFFSET_SCALE_FACTOR))	:			// Negative number
-													(receivedMsg.Data[0]*OFFSET_SCALE_FACTOR);																// Positive number
+		double offsetVal = 	((comData.data[0]) & (1<<ADXL345_REG_MSB_BIT)) ?
+													(-1.0*( (uint8_t)( ~(comData.data[0]-1) )*OFFSET_SCALE_FACTOR))	:			// Negative number
+													(comData.data[0]*OFFSET_SCALE_FACTOR);																// Positive number
 		
 		
 		
@@ -211,21 +243,14 @@ void ADXL345_SetMaxTapDuration(const ADXL345_HandleTypeDef * ADXL345, uint32_t m
 {
 	uint8_t	sendVal = maxTapDur/DUR_TIME_SCALE_FACTOR;
 	
-	osMutexAcquire(MTX_comInputTx, osWaitForever);
+	const ADXL345_ComDataTypeDef comData =
+	{
+		.data[0] = sendVal,
+		.dataSize = 1,
+		.memAddress = DUR
+	};
 	
-	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
-																		.DevAddress = ADXL345->i2cDevAddr << 1,
-																		.MemAddress	= DUR,
-																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																		.Data[0] = sendVal,
-																		.Size = ADXL345_1BYTE_REGISTER };
-		
-	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
-	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
-																		
-	osMutexRelease(MTX_comInputTx);	
+	ADXL345_RegisterSetter(ADXL345, &comData);
 }
 
 /**
@@ -237,24 +262,15 @@ void ADXL345_SetMaxTapDuration(const ADXL345_HandleTypeDef * ADXL345, uint32_t m
   */
 uint32_t ADXL345_GetMaxTapDuration(const ADXL345_HandleTypeDef * ADXL345)
 {
-	osMutexAcquire(MTX_comInputRx, osWaitForever);
+	ADXL345_ComDataTypeDef comData =
+	{
+		.dataSize = 1,
+		.memAddress = DUR
+	};
 	
-	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
-																				.DevAddress = ADXL345->i2cDevAddr << 1,
-																				.MemAddress	= DUR,
-																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																				.Size = ADXL345_1BYTE_REGISTER };
-	
-	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
-	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
-	
-	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
-	
-	osMutexRelease(MTX_comInputRx);
-	
-	return (receivedMsg.Data[0])*DUR_TIME_SCALE_FACTOR;
+	ADXL345_RegisterGetter(ADXL345, &comData);
+											
+	return (comData.data[0])*DUR_TIME_SCALE_FACTOR;
 }
 
 /**
@@ -270,21 +286,14 @@ void ADXL345_SetLatencyTime(const ADXL345_HandleTypeDef * ADXL345, double latTim
 {
 	uint8_t	sendVal = latTime/LATENT_TIME_SCALE_FACTOR;
 	
-	osMutexAcquire(MTX_comInputTx, osWaitForever);
+	const ADXL345_ComDataTypeDef comData =
+	{
+		.data[0] = sendVal,
+		.dataSize = 1,
+		.memAddress = LATENT
+	};
 	
-	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
-																		.DevAddress = ADXL345->i2cDevAddr << 1,
-																		.MemAddress	= LATENT,
-																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																		.Data[0] = sendVal,
-																		.Size = ADXL345_1BYTE_REGISTER };
-		
-	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
-	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
-																		
-	osMutexRelease(MTX_comInputTx);	
+	ADXL345_RegisterSetter(ADXL345, &comData);
 }
 
 /**
@@ -297,24 +306,15 @@ void ADXL345_SetLatencyTime(const ADXL345_HandleTypeDef * ADXL345, double latTim
   */
 double ADXL345_GetLatencyTime(const ADXL345_HandleTypeDef * ADXL345)
 {
-	osMutexAcquire(MTX_comInputRx, osWaitForever);
+	ADXL345_ComDataTypeDef comData =
+	{
+		.dataSize = 1,
+		.memAddress = LATENT
+	};
 	
-	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
-																				.DevAddress = ADXL345->i2cDevAddr << 1,
-																				.MemAddress	= LATENT,
-																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																				.Size = ADXL345_1BYTE_REGISTER };
-	
-	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
-	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
-	
-	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
-	
-	osMutexRelease(MTX_comInputRx);																			
+	ADXL345_RegisterGetter(ADXL345, &comData);																		
 																				
-	return (receivedMsg.Data[0])*LATENT_TIME_SCALE_FACTOR;
+	return (comData.data[0])*LATENT_TIME_SCALE_FACTOR;
 }
 
 /**
@@ -330,21 +330,14 @@ void ADXL345_SetWindowTime(const ADXL345_HandleTypeDef * ADXL345, double winTime
 {
 	uint8_t	sendVal = winTime/WINDOW_TIME_SCALE_FACTOR;
 	
-	osMutexAcquire(MTX_comInputTx, osWaitForever);
+	const ADXL345_ComDataTypeDef comData =
+	{
+		.data[0] = sendVal,
+		.dataSize = 1,
+		.memAddress = WINDOW
+	};
 	
-	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
-																		.DevAddress = ADXL345->i2cDevAddr << 1,
-																		.MemAddress	= WINDOW,
-																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																		.Data[0] = sendVal,
-																		.Size = ADXL345_1BYTE_REGISTER };
-		
-	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
-	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
-																		
-	osMutexRelease(MTX_comInputTx);	
+	ADXL345_RegisterSetter(ADXL345, &comData);
 }
 
 /**
@@ -357,24 +350,15 @@ void ADXL345_SetWindowTime(const ADXL345_HandleTypeDef * ADXL345, double winTime
   */
 double ADXL345_GetWindowTime(const ADXL345_HandleTypeDef * ADXL345)
 {
-	osMutexAcquire(MTX_comInputRx, osWaitForever);
+	ADXL345_ComDataTypeDef comData =
+	{
+		.dataSize = 1,
+		.memAddress = WINDOW
+	};
 	
-	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
-																				.DevAddress = ADXL345->i2cDevAddr << 1,
-																				.MemAddress	= WINDOW,
-																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																				.Size = ADXL345_1BYTE_REGISTER };
-	
-	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
-	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
-	
-	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
-
-	osMutexRelease(MTX_comInputRx);
-																				
-	return (receivedMsg.Data[0])*WINDOW_TIME_SCALE_FACTOR;
+	ADXL345_RegisterGetter(ADXL345, &comData);
+										
+	return (comData.data[0])*WINDOW_TIME_SCALE_FACTOR;
 }
 
 /**
@@ -389,21 +373,14 @@ void ADXL345_SetActivityThreshold(const ADXL345_HandleTypeDef * ADXL345, double 
 {
 	uint8_t	sendVal = actThresh/ACTIVITY_THRESH_SCALE_FACTOR;
 	
-	osMutexAcquire(MTX_comInputTx, osWaitForever);
+	const ADXL345_ComDataTypeDef comData =
+	{
+		.data[0] = sendVal,
+		.dataSize = 1,
+		.memAddress = THRESH_ACT
+	};
 	
-	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
-																		.DevAddress = ADXL345->i2cDevAddr << 1,
-																		.MemAddress	= THRESH_ACT,
-																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																		.Data[0] = sendVal,
-																		.Size = ADXL345_1BYTE_REGISTER };
-		
-	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
-	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
-																		
-	osMutexRelease(MTX_comInputTx);	
+	ADXL345_RegisterSetter(ADXL345, &comData);
 }
 
 /**
@@ -415,24 +392,15 @@ void ADXL345_SetActivityThreshold(const ADXL345_HandleTypeDef * ADXL345, double 
   */
 double ADXL345_GetActivityThreshold(const ADXL345_HandleTypeDef * ADXL345)
 {
-	osMutexAcquire(MTX_comInputRx, osWaitForever);
+	ADXL345_ComDataTypeDef comData =
+	{
+		.dataSize = 1,
+		.memAddress = THRESH_ACT
+	};
 	
-	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
-																				.DevAddress = ADXL345->i2cDevAddr << 1,
-																				.MemAddress	= THRESH_ACT,
-																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																				.Size = ADXL345_1BYTE_REGISTER };
-	
-	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
-	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
-	
-	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
-
-	osMutexRelease(MTX_comInputRx);
-																				
-	return (receivedMsg.Data[0])*WINDOW_TIME_SCALE_FACTOR;
+	ADXL345_RegisterGetter(ADXL345, &comData);
+													
+	return (comData.data[0])*WINDOW_TIME_SCALE_FACTOR;
 }
 
 /**
@@ -447,21 +415,14 @@ void ADXL345_SetInactivityThreshold(const ADXL345_HandleTypeDef * ADXL345, doubl
 {
 	uint8_t	sendVal = inactThresh/INACTIVITY_THRESH_SCALE_FACTOR;
 	
-	osMutexAcquire(MTX_comInputTx, osWaitForever);
+	const ADXL345_ComDataTypeDef comData =
+	{
+		.data[0] = sendVal,
+		.dataSize = 1,
+		.memAddress = THRESH_INACT
+	};
 	
-	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
-																		.DevAddress = ADXL345->i2cDevAddr << 1,
-																		.MemAddress	= THRESH_INACT,
-																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																		.Data[0] = sendVal,
-																		.Size = ADXL345_1BYTE_REGISTER };
-		
-	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
-					
-	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
-	uint32_t retVal = osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
-																		
-	osMutexRelease(MTX_comInputTx);	
+	ADXL345_RegisterSetter(ADXL345, &comData);
 }
 
 /**
@@ -473,24 +434,15 @@ void ADXL345_SetInactivityThreshold(const ADXL345_HandleTypeDef * ADXL345, doubl
   */
 double ADXL345_GetInactivityThreshold(const ADXL345_HandleTypeDef * ADXL345)
 {
-	osMutexAcquire(MTX_comInputRx, osWaitForever);
+	ADXL345_ComDataTypeDef comData =
+	{
+		.dataSize = 1,
+		.memAddress = THRESH_INACT
+	};
 	
-	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
-																				.DevAddress = ADXL345->i2cDevAddr << 1,
-																				.MemAddress	= THRESH_INACT,
-																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																				.Size = ADXL345_1BYTE_REGISTER };
-	
-	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
-	uint32_t retVal = osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
-	
-	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
-	
-	osMutexRelease(MTX_comInputRx);
-																				
-	return (receivedMsg.Data[0])*INACTIVITY_THRESH_SCALE_FACTOR;
+	ADXL345_RegisterGetter(ADXL345, &comData);
+														
+	return (comData.data[0])*INACTIVITY_THRESH_SCALE_FACTOR;
 }
 
 /**
@@ -508,21 +460,14 @@ void ADXL345_SetInactivityTime(const ADXL345_HandleTypeDef * ADXL345, uint8_t mi
 {
 	uint8_t	sendVal = minInactTime/TIME_INACTIVITY_SCALE_FACTOR;
 	
-	osMutexAcquire(MTX_comInputTx, osWaitForever);
+	const ADXL345_ComDataTypeDef comData =
+	{
+		.data[0] = sendVal,
+		.dataSize = 1,
+		.memAddress = TIME_INACT
+	};
 	
-	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
-																		.DevAddress = ADXL345->i2cDevAddr << 1,
-																		.MemAddress	= TIME_INACT,
-																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																		.Data[0] = sendVal,
-																		.Size = ADXL345_1BYTE_REGISTER };
-		
-	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
-					
-	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
-	uint32_t retVal = osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
-																		
-	osMutexRelease(MTX_comInputTx);	
+	ADXL345_RegisterSetter(ADXL345, &comData);
 }
 
 /**
@@ -537,24 +482,15 @@ void ADXL345_SetInactivityTime(const ADXL345_HandleTypeDef * ADXL345, uint8_t mi
   */
 uint8_t ADXL345_GetInactivityTime(const ADXL345_HandleTypeDef * ADXL345)
 {
-	osMutexAcquire(MTX_comInputRx, osWaitForever);
+	ADXL345_ComDataTypeDef comData =
+	{
+		.dataSize = 1,
+		.memAddress = TIME_INACT
+	};
 	
-	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
-																				.DevAddress = ADXL345->i2cDevAddr << 1,
-																				.MemAddress	= TIME_INACT,
-																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																				.Size = ADXL345_1BYTE_REGISTER };
-	
-	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
-	uint32_t retVal = osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
-	
-	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
-	
-	osMutexRelease(MTX_comInputRx);
+	ADXL345_RegisterGetter(ADXL345, &comData);
 																				
-	return (receivedMsg.Data[0])*TIME_INACTIVITY_SCALE_FACTOR;
+	return (comData.data[0])*TIME_INACTIVITY_SCALE_FACTOR;
 }
 
 /**
@@ -566,21 +502,14 @@ uint8_t ADXL345_GetInactivityTime(const ADXL345_HandleTypeDef * ADXL345)
   */
 void ADXL345_ConfigInterrupts(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_InterruptReg * intReg)
 {
-	osMutexAcquire(MTX_comInputTx, osWaitForever);
+	const ADXL345_ComDataTypeDef comData =
+	{
+		.data[0] = intReg->BYTE,
+		.dataSize = 1,
+		.memAddress = INT_ENABLE
+	};
 	
-	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
-																		.DevAddress = ADXL345->i2cDevAddr << 1,
-																		.MemAddress	= INT_ENABLE,
-																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																		.Data[0] = intReg->BYTE,
-																		.Size = ADXL345_1BYTE_REGISTER };
-		
-	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
-					
-	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
-	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
-																		
-	osMutexRelease(MTX_comInputTx);	
+	ADXL345_RegisterSetter(ADXL345, &comData);
 }
 
 
@@ -593,24 +522,15 @@ void ADXL345_ConfigInterrupts(const ADXL345_HandleTypeDef * ADXL345, const ADXL3
   */
 void ADXL345_GetInterruptStatus(const ADXL345_HandleTypeDef * ADXL345, ADXL345_InterruptReg * intReg)
 {
-	osMutexAcquire(MTX_comInputRx, osWaitForever);
+	ADXL345_ComDataTypeDef comData =
+	{
+		.dataSize = 1,
+		.memAddress = INT_SOURCE
+	};
 	
-	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
-																				.DevAddress = ADXL345->i2cDevAddr << 1,
-																				.MemAddress	= INT_SOURCE,
-																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																				.Size = ADXL345_1BYTE_REGISTER };
-	
-	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
-	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
-	
-	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
-	
-	osMutexRelease(MTX_comInputRx);																			
-																				
-	intReg->BYTE=receivedMsg.Data[0];
+	ADXL345_RegisterGetter(ADXL345, &comData);
+													
+	intReg->BYTE=comData.data[0];
 }
 
 
@@ -624,7 +544,7 @@ void ADXL345_GetInterruptStatus(const ADXL345_HandleTypeDef * ADXL345, ADXL345_I
 	*												Set bits of index of one  represents INT2 pins.
   * @retval 		None
   */
-void ADXL345_MapInterruptPins(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_InterruptReg * pinMap)
+void ADXL345_MapInterruptPins(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_InterruptReg pinMap)
 {
 	/* It is recommended that interrupt bits be configured with the interrupts disabled,
 		 preventing interrupts from being accidentally triggered during configuration.
@@ -638,25 +558,15 @@ void ADXL345_MapInterruptPins(const ADXL345_HandleTypeDef * ADXL345, const ADXL3
 	ADXL345_InterruptReg intReg = {.BYTE = ADXL345_RESET_ALL_INTERRUPTS};
 	ADXL345_ConfigInterrupts(ADXL345, &intReg);
 
-	uint8_t sendVal = (~pinMap[ADXL345_INT1_PIN].BYTE) |
-										( pinMap[ADXL345_INT2_PIN].BYTE);
+	const ADXL345_ComDataTypeDef comData =
+	{
+		.data[0] = pinMap.BYTE,
+		.dataSize = 1,
+		.memAddress = INT_MAP
+	};
 	
-	osMutexAcquire(MTX_comInputTx, osWaitForever);
+	ADXL345_RegisterSetter(ADXL345, &comData);
 	
-	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
-																		.DevAddress = ADXL345->i2cDevAddr << 1,
-																		.MemAddress	= INT_MAP,
-																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																		.Data[0] = intReg.BYTE,
-																		.Size = ADXL345_1BYTE_REGISTER };
-		
-	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
-					
-	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
-	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
-																		
-	osMutexRelease(MTX_comInputTx);	
-						
 	/* Set all interrupts to their previous state */
 	intReg.BYTE = lastIntStatus.BYTE;
 	ADXL345_ConfigInterrupts(ADXL345, &intReg);
@@ -677,28 +587,102 @@ DataStatus ADXL345_GetRawDatas(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Ra
 	
 	if(intStatus.BIT.dataReady == true)
 	{
-		osMutexAcquire(MTX_comInputRx, osWaitForever);
+		ADXL345_ComDataTypeDef comData =
+		{
+			.dataSize = 6,
+			.memAddress = ADXL345_START_OF_DATA_REGS
+		};
 	
-		COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
-																					.DevAddress = ADXL345->i2cDevAddr << 1,
-																					.MemAddress	= ADXL345_START_OF_DATA_REGS,
-																					.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																					.Size = ADXL345_DATA_REGISTER_SIZE };
+		ADXL345_RegisterGetter(ADXL345, &comData);
+												
+		uint16_t xData = comData.data[1]<<8 | comData.data[0];
+		uint16_t yData = comData.data[3]<<8 | comData.data[2];
+		uint16_t zData = comData.data[5]<<8 | comData.data[4];
 		
-		osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
+		rawDatas->rawXData = Get_HalfWord2sComplement(xData)*(16.0/512.0);
+		rawDatas->rawYData = Get_HalfWord2sComplement(yData)*(16.0/512.0);
+		rawDatas->rawZData = Get_HalfWord2sComplement(zData)*(16.0/512.0);
 					
-		osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
-		osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
 		
-		osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
-																		
-		rawDatas->rawXData = (receivedMsg.Data[1]<<8 | receivedMsg.Data[0]);
-		rawDatas->rawYData = (receivedMsg.Data[3]<<8 | receivedMsg.Data[2]);
-		rawDatas->rawZData = (receivedMsg.Data[5]<<8 | receivedMsg.Data[4]);
-																					
-		osMutexRelease(MTX_comInputRx);
-																					
 		return DATA_READY;
 	}
 	return DATA_NOT_READY;
 }
+
+/**
+  * @brief  		
+	*	@param[IN]  ADXL345 		Sensor handler.
+	*	@param[IN]	dataFormat	The content of DATA_FORMAT register.
+  * @retval 		
+  */
+void ADXL345_SetDataFormat(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_DataFormatReg * dataFormat)
+{
+	const ADXL345_ComDataTypeDef comData =
+	{
+		.data[0] = dataFormat->BYTE,
+		.dataSize = 1,
+		.memAddress = DATA_FORMAT
+	};
+	
+	ADXL345_RegisterSetter(ADXL345, &comData);
+}
+
+/**
+  * @brief  		
+	*	@param[IN]  ADXL345 		Sensor handler.
+	*	@param[OUT]	dataFormat	The content of DATA_FORMAT register.
+  * @retval 		
+  */
+void ADXL345_GetDataFormat(const ADXL345_HandleTypeDef * ADXL345, ADXL345_DataFormatReg * dataFormat)
+{
+	ADXL345_ComDataTypeDef comData =
+	{
+		.dataSize = 1,
+		.memAddress = DATA_FORMAT
+	};
+	
+	ADXL345_RegisterGetter(ADXL345, &comData);
+	
+	dataFormat->BYTE = comData.data[0];
+}
+
+/**
+  * @brief  		
+	*	@param[IN]  ADXL345 			Sensor handler.
+	*	@param[OUT]	powerControl	The content of POWER_CTRL register.
+  * @retval 		
+  */
+void ADXL345_SetPowerControl(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_PowerCtrReg * powerControl)
+{
+	const ADXL345_ComDataTypeDef comData =
+	{
+		.data[0] = powerControl->BYTE,
+		.dataSize = 1,
+		.memAddress = POWER_CTL
+	};
+	
+	ADXL345_RegisterSetter(ADXL345, &comData);
+
+}
+
+
+/**
+  * @brief  		
+	*	@param[IN]  ADXL345 			Sensor handler.
+	*	@param[OUT]	powerControl	The content of POWER_CTRL register.
+  * @retval 		
+  */
+void ADXL345_GetPowerControl(const ADXL345_HandleTypeDef * ADXL345, ADXL345_PowerCtrReg * powerControl)
+{
+	ADXL345_ComDataTypeDef comData =
+	{
+		.dataSize = 1,
+		.memAddress = POWER_CTL
+	};
+	
+	ADXL345_RegisterGetter(ADXL345, &comData);
+	
+	powerControl->BYTE = comData.data[0];
+}
+
+

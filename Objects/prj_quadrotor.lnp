@@ -10,6 +10,7 @@
 ".\objects\adxl345.o"
 ".\objects\hmc5883l.o"
 ".\objects\itg3205.o"
+".\objects\calc.o"
 ".\objects\irq_armv7m.o"
 ".\objects\rtx_delay.o"
 ".\objects\rtx_evflags.o"

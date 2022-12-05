@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>.\Source\Inputs\Inc;.\Source\Inputs\Sensors\Inc;.\Source\Common\Inc</IncludePath>
+              <IncludePath>.\Source\Inputs\Inc;.\Source\Inputs\Sensors\Inc;.\Source\Common\Inc;.\Source\Calculation\Inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -471,10 +471,12 @@
               <FileType>5</FileType>
               <FilePath>.\Source\Common\Inc\defines.h</FilePath>
             </File>
+            <File>
+              <FileName>calc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\Common\Src\calc.c</FilePath>
+            </File>
           </Files>
-        </Group>
-        <Group>
-          <GroupName>New Group</GroupName>
         </Group>
         <Group>
           <GroupName>::CMSIS</GroupName>
