@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>.\Source\Inputs\Inc;.\Source\Inputs\Sensors\Inc;.\Source\Common\Inc;.\Source\Calculation\Inc</IncludePath>
+              <IncludePath>.\Source\Inputs\Inc;.\Source\Sensors\Inc;.\Source\Common\Inc;.\Source\Calculation\Inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -437,9 +437,9 @@
               <FilePath>.\Source\Inputs\Src\analog_input.c</FilePath>
             </File>
             <File>
-              <FileName>comm_input.c</FileName>
+              <FileName>com_input.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Source\Inputs\Src\comm_input.c</FilePath>
+              <FilePath>.\Source\Inputs\Src\com_input.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -449,17 +449,17 @@
             <File>
               <FileName>adxl345.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Source\Inputs\Sensors\Src\adxl345.c</FilePath>
-            </File>
-            <File>
-              <FileName>hmc5883l.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\Inputs\Sensors\Src\hmc5883l.c</FilePath>
+              <FilePath>.\Source\Sensors\Src\adxl345.c</FilePath>
             </File>
             <File>
               <FileName>itg3205.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Source\Inputs\Sensors\Src\itg3205.c</FilePath>
+              <FilePath>.\Source\Sensors\Src\itg3205.c</FilePath>
+            </File>
+            <File>
+              <FileName>hmc5883l.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\Sensors\Src\hmc5883l.c</FilePath>
             </File>
           </Files>
         </Group>

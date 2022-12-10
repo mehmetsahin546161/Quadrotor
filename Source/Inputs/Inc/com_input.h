@@ -1,5 +1,5 @@
-#ifndef COMM_INPUT_H
-#define COMM_INPUT_H
+#ifndef COM_INPUT_H
+#define COM_INPUT_H
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -17,8 +17,25 @@
 #define COM_INPUT_MAX_TX_TIM		100				//100ms
 #define COM_INPUT_MAX_RX_TIM		100				//100ms
 
-#define COM_INPUT_MAX_MULTI_BYTE				6
+#define COM_INPUT_MAX_MULTI_BYTE				8
 /* Exported types ------------------------------------------------------------*/
+typedef struct
+{
+	//TODO:It may be generalized for other communication intefaces.
+	
+	I2C_HandleTypeDef * i2cHandle;
+	uint8_t 						i2cDevAddr;
+	
+}COM_Input_HandleTypeDef;
+
+typedef struct
+{
+	uint8_t data[COM_INPUT_MAX_MULTI_BYTE];
+	uint8_t dataSize;
+	uint8_t memAddress;
+
+}COM_Input_TempDataTypeDef;
+
 typedef struct
 {
 	//TODO:It may be generalized for other communication intefaces.
@@ -54,4 +71,7 @@ extern osMutexId_t					MTX_comInputRx;
 /* Exported functions prototypes ---------------------------------------------*/
 extern void COM_Input_Init();
 
-#endif /* COMM_INPUT_H */
+extern void COM_Input_RegisterSetter(const COM_Input_HandleTypeDef * COM_Input, const COM_Input_TempDataTypeDef * setter);
+extern void COM_Input_RegisterGetter(const COM_Input_HandleTypeDef * COM_Input, COM_Input_TempDataTypeDef * getter);
+
+#endif /* COM_INPUT_H */

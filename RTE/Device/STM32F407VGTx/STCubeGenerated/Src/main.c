@@ -31,8 +31,10 @@
 #endif  
   
 #include "cmsis_os2.h"
+#include "com_input.h"
 #include "adxl345.h"
-#include "comm_input.h"
+#include "itg3205.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,8 +55,11 @@
 
 /* USER CODE BEGIN PV */
 extern I2C_HandleTypeDef hi2c1;
-const ADXL345_HandleTypeDef ADXL345 = {	.i2cHandle = &hi2c1,
-																				.i2cDevAddr = I2C_DEV_ADDR_GND };
+const COM_Input_HandleTypeDef ADXL345 = {	.i2cHandle = &hi2c1,
+																				  .i2cDevAddr = ADXL345_I2C_DEV_ADDR_GND };
+
+const COM_Input_HandleTypeDef ITG3205 = {	.i2cHandle = &hi2c1,
+																				  .i2cDevAddr = ITG3205_I2C_DEV_ADDR_GND };
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -193,32 +198,13 @@ void SystemClock_Config(void)
 void app_main (void* arg)
 {
 	COM_Input_Init();
-
-	uint8_t me = ADXL345_WhoAmI(&ADXL345);
+	ADXL345_InitSensor(&ADXL345);
 	
-	const ADXL345_DataFormatReg setDataFormat = 
-	{ 
-		.BIT.range = ADXL345_16G_RANGE,
-		.BIT.justify = ADXL345_RIGHT_JUSTIFIED, 
-		.BIT.fullRes = ADXL345_FULL_RES_DISABLED,
-		.BIT.intInvert = ADXL345_INTERRUPT_ACTIVE_HIGH
-	};
-	ADXL345_SetDataFormat(&ADXL345, &setDataFormat);
+	uint8_t regVal = ITG3205_WhoAmI(&ITG3205);
 	
-	const ADXL345_PowerCtrReg setPowerControl = 
-	{
-		.BIT.sleep = ADXL345_NORMAL_MODE,
-		.BIT.meausure = ADXL345_MEASUREMENT_MODE
-	};
-	ADXL345_SetPowerControl(&ADXL345, &setPowerControl);
-	
-	
-	DataStatus readStatus;
-	ADXL345_RawDatas rawDatas;
-
 	while(true)
 	{
-		readStatus = ADXL345_GetRawDatas(&ADXL345, &rawDatas);
+		
 	}
 }
 /* USER CODE END 4 */

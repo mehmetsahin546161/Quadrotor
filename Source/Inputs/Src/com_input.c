@@ -1,4 +1,4 @@
-#include "comm_input.h"
+#include "com_input.h"
 #include "main.h"
 #include "cmsis_os2.h"
 #include "adxl345.h"
@@ -8,7 +8,7 @@
 #define MAX_COM_INPUT_DATA_CNT			20
 
 /* Exported variables --------------------------------------------------------*/
-extern ADXL345_HandleTypeDef ADXL345;
+
 
 /* Private function prototypes -----------------------------------------------*/
 static void COM_Input_SendThread(void* arg);
@@ -136,6 +136,70 @@ void COM_Input_Init()
 		//Mutex couldn't be created.
 	}
 }
+
+/**
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  */
+void COM_Input_RegisterSetter(const COM_Input_HandleTypeDef * COM_Input, const COM_Input_TempDataTypeDef * setter)
+{
+	osMutexAcquire(MTX_comInputTx, osWaitForever);
+		
+	COM_Input_DataTypeDef sendMsg = {	.hi2c = COM_Input->i2cHandle,
+																		.DevAddress = COM_Input->i2cDevAddr << 1,
+																		.MemAddress	= setter->memAddress,
+																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																		.Size = setter->dataSize };
+	
+	/* Multi-Byte initialization is not valid */
+	for(uint8_t sizeCnt=0; sizeCnt<setter->dataSize; sizeCnt++)
+	{
+		sendMsg.Data[sizeCnt] = (setter->data)[sizeCnt];
+	}
+	
+	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
+	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
+																		
+	osMutexRelease(MTX_comInputTx);	
+
+}
+
+/**
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  */
+void COM_Input_RegisterGetter(const COM_Input_HandleTypeDef * COM_Input, COM_Input_TempDataTypeDef * getter)
+{
+	osMutexAcquire(MTX_comInputRx, osWaitForever);
+	
+	COM_Input_DataTypeDef receivedMsg = {	.hi2c = COM_Input->i2cHandle,
+																				.DevAddress = COM_Input->i2cDevAddr << 1,
+																				.MemAddress	= getter->memAddress  ,
+																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
+																				.Size =  getter->dataSize};
+	
+	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
+				
+	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
+	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
+	
+	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
+	
+	for(uint8_t sizeCnt=0; sizeCnt<getter->dataSize; sizeCnt++)
+	{
+		(getter->data)[sizeCnt] = receivedMsg.Data[sizeCnt];
+	}
+	
+	osMutexRelease(MTX_comInputRx);
+}
+
+
 
 /**
   * @brief  Memory Tx Transfer completed callback.

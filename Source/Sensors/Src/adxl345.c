@@ -1,101 +1,40 @@
 #include 	"adxl345.h"
 #include 	"cmsis_os2.h"
-#include 	"comm_input.h"
+#include 	"com_input.h"
 #include	"defines.h"
 #include   "calc.h"
 
 /* Private macro -------------------------------------------------------------*/
 /* Private types -------------------------------------------------------------*/
-typedef struct
-{
-	uint8_t data[COM_INPUT_MAX_MULTI_BYTE];
-	uint8_t dataSize;
-	uint8_t memAddress;
-
-}ADXL345_ComDataTypeDef;
-
-
-/* Private function prototypes -----------------------------------------------*/
-static void ADXL345_RegisterSetter(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_ComDataTypeDef * setter);
-static void ADXL345_RegisterGetter(const ADXL345_HandleTypeDef * ADXL345, ADXL345_ComDataTypeDef * getter);
-
 /* Private functions ---------------------------------------------------------*/
 
-/**
-  * @brief  		None
-  * @param[IN] 	None
-  * @param[OUT]	None
-  * @retval 		None
-  */
-static void ADXL345_RegisterSetter(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_ComDataTypeDef * setter)
-{
-	osMutexAcquire(MTX_comInputTx, osWaitForever);
-		
-	COM_Input_DataTypeDef sendMsg = {	.hi2c = ADXL345->i2cHandle,
-																		.DevAddress = ADXL345->i2cDevAddr << 1,
-																		.MemAddress	= setter->memAddress,
-																		.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																		.Size = setter->dataSize };
-	
-	/* Multi-Byte initialization is not valid */
-	for(uint8_t sizeCnt=0; sizeCnt<setter->dataSize; sizeCnt++)
-	{
-		sendMsg.Data[sizeCnt] = (setter->data)[sizeCnt];
-	}
-	
-	osMessageQueuePut(MSG_comInputTx, &sendMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputTx, COM_INPUT_TX_REQU_GET);
-	osEventFlagsWait(EVT_comInputTx, COM_INPUT_TX_ACK, osFlagsWaitAll, COM_INPUT_MAX_TX_TIM);
-																		
-	osMutexRelease(MTX_comInputTx);	
 
-}
-
-/**
-  * @brief  		None
-  * @param[IN] 	None
-  * @param[OUT]	None
-  * @retval 		None
-  */
-static void ADXL345_RegisterGetter(const ADXL345_HandleTypeDef * ADXL345, ADXL345_ComDataTypeDef * getter)
-{
-	osMutexAcquire(MTX_comInputRx, osWaitForever);
-	
-	COM_Input_DataTypeDef receivedMsg = {	.hi2c = ADXL345->i2cHandle,
-																				.DevAddress = ADXL345->i2cDevAddr << 1,
-																				.MemAddress	= getter->memAddress  ,
-																				.MemAddSize = I2C_MEMADD_SIZE_8BIT,
-																				.Size =  getter->dataSize};
-	
-	osMessageQueuePut(MSG_comInputRx, &receivedMsg, NULL, 0);
-				
-	osEventFlagsSet(EVT_comInputRx, COM_INPUT_RX_REQU_GET);
-	osEventFlagsWait(EVT_comInputRx, COM_INPUT_RX_ACK, osFlagsWaitAll, COM_INPUT_MAX_RX_TIM);
-	
-	osMessageQueueGet(MSG_comInputRx, &receivedMsg, NULL, 0);
-	
-	for(uint8_t sizeCnt=0; sizeCnt<getter->dataSize; sizeCnt++)
-	{
-		(getter->data)[sizeCnt] = receivedMsg.Data[sizeCnt];
-	}
-	
-	osMutexRelease(MTX_comInputRx);
-}
 
 /* Exported functions --------------------------------------------------------*/
 
 /**
-  * @brief  		None
+  * @brief  		Sets basic functionalities.
   * @param[IN] 	None
   * @param[OUT]	None
   * @retval 		None
   */
-void ADXL345_Init(void)
+void ADXL345_InitSensor(const COM_Input_HandleTypeDef * ADXL345)
 {
-
+	const ADXL345_DataFormatReg setDataFormat = 
+	{ 
+		.BIT.range = ADXL345_16G_RANGE,
+		.BIT.justify = ADXL345_RIGHT_JUSTIFIED, 
+		.BIT.fullRes = ADXL345_FULL_RES_DISABLED,
+		.BIT.intInvert = ADXL345_INTERRUPT_ACTIVE_HIGH
+	};
+	ADXL345_SetDataFormat(ADXL345, &setDataFormat);
 	
-	
+	const ADXL345_PowerCtrReg setPowerControl = 
+	{
+		.BIT.sleep = ADXL345_NORMAL_MODE,
+		.BIT.meausure = ADXL345_MEASUREMENT_MODE
+	};
+	ADXL345_SetPowerControl(ADXL345, &setPowerControl);
 }
 
 /**
@@ -103,15 +42,15 @@ void ADXL345_Init(void)
   * @param[IN]  ADXL345 Sensor handler
   * @retval 		None
   */
-uint8_t ADXL345_WhoAmI(const ADXL345_HandleTypeDef * ADXL345)
+uint8_t ADXL345_WhoAmI(const COM_Input_HandleTypeDef * ADXL345)
 {
-	ADXL345_ComDataTypeDef comData =
+	COM_Input_TempDataTypeDef comData =
 	{
 		.dataSize = 1,
 		.memAddress = DEVID
 	};
 	
-	ADXL345_RegisterGetter(ADXL345, &comData);
+	COM_Input_RegisterGetter(ADXL345, &comData);
 											
 	return comData.data[0];
 }
@@ -124,20 +63,20 @@ uint8_t ADXL345_WhoAmI(const ADXL345_HandleTypeDef * ADXL345)
   * @param[IN]  dTapThresh	Minimum acceleration value represented in mg unit to create tap interrupt.
   * @retval 		None
   */
-void ADXL345_SetTapThreshold(const ADXL345_HandleTypeDef * ADXL345, double tapThresh)
+void ADXL345_SetTapThreshold(const COM_Input_HandleTypeDef * ADXL345, double tapThresh)
 {
 	if( (tapThresh>=0) && (tapThresh<=16000) )
 	{
 		uint8_t sendVal = (1.0/TAP_THRESH_SCALE_FACTOR)*tapThresh;
 		
-		const ADXL345_ComDataTypeDef comData =
+		const COM_Input_TempDataTypeDef comData =
 		{
 			.data[0] = sendVal,
 			.dataSize = 1,
 			.memAddress = THRESH_TAP
 		};
 		
-		ADXL345_RegisterSetter(ADXL345, &comData);
+		COM_Input_RegisterSetter(ADXL345, &comData);
 	}
 }
 
@@ -148,15 +87,15 @@ void ADXL345_SetTapThreshold(const ADXL345_HandleTypeDef * ADXL345, double tapTh
 	*	@param[IN]  ADXL345 Sensor handler.
   * @retval 		Minimum acceleration value represented in mg unit to create tap interrupt.
   */
-double ADXL345_GetTapThreshold(const ADXL345_HandleTypeDef * ADXL345)
+double ADXL345_GetTapThreshold(const COM_Input_HandleTypeDef * ADXL345)
 {
-	ADXL345_ComDataTypeDef comData =
+	COM_Input_TempDataTypeDef comData =
 	{
 		.dataSize = 1,
 		.memAddress = THRESH_TAP
 	};
 	
-	ADXL345_RegisterGetter(ADXL345, &comData);
+	COM_Input_RegisterGetter(ADXL345, &comData);
 											
 	return (comData.data[0])*TAP_THRESH_SCALE_FACTOR;
 }
@@ -169,7 +108,7 @@ double ADXL345_GetTapThreshold(const ADXL345_HandleTypeDef * ADXL345)
   * @param[IN]  dOffset		Offset value represented in mg unit.
   * @retval 		None
   */
-void ADXL345_SetOffset(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis, double offset)
+void ADXL345_SetOffset(const COM_Input_HandleTypeDef * ADXL345, ADXL345_Axis axis, double offset)
 {
 	if( (offset<=2000) && (offset>=-2000) )
 	{
@@ -183,14 +122,14 @@ void ADXL345_SetOffset(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis,
 		
 		if(memAddress != INVALID_DATA)
 		{
-			const ADXL345_ComDataTypeDef comData =
+			const COM_Input_TempDataTypeDef comData =
 			{
 				.data[0] = sendVal,
 				.dataSize = 1,
 				.memAddress = memAddress
 			};
 		
-			ADXL345_RegisterSetter(ADXL345, &comData);
+			COM_Input_RegisterSetter(ADXL345, &comData);
 		}
 	}
 }
@@ -202,7 +141,7 @@ void ADXL345_SetOffset(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis,
   * @param[IN]  eAxis 		The axes whose offset is queued
   * @retval 		Offset value represented in mg unit.
   */
-double ADXL345_GetOffset(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis)
+double ADXL345_GetOffset(const COM_Input_HandleTypeDef * ADXL345, ADXL345_Axis axis)
 {
 	uint8_t memAddress = 	(axis==ADXL345_X_AXIS) ? OFSX :
 												(axis==ADXL345_Y_AXIS) ? OFSY :
@@ -210,13 +149,13 @@ double ADXL345_GetOffset(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axi
 		
 	if(memAddress != INVALID_DATA)
 	{
-		ADXL345_ComDataTypeDef comData =
+		COM_Input_TempDataTypeDef comData =
 		{
 			.dataSize = 1,
 			.memAddress = memAddress
 		};
 	
-		ADXL345_RegisterGetter(ADXL345, &comData);
+		COM_Input_RegisterGetter(ADXL345, &comData);
 																				
 		/* Check MSB bit to find the sign of the value. */
 		double offsetVal = 	((comData.data[0]) & (1<<ADXL345_REG_MSB_BIT)) ?
@@ -239,18 +178,18 @@ double ADXL345_GetOffset(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axi
   * @param[IN]  u4MaxTapDur Maximum tap duration represented in microsecond unit.
   * @retval 		None
   */
-void ADXL345_SetMaxTapDuration(const ADXL345_HandleTypeDef * ADXL345, uint32_t maxTapDur)
+void ADXL345_SetMaxTapDuration(const COM_Input_HandleTypeDef * ADXL345, uint32_t maxTapDur)
 {
 	uint8_t	sendVal = maxTapDur/DUR_TIME_SCALE_FACTOR;
 	
-	const ADXL345_ComDataTypeDef comData =
+	const COM_Input_TempDataTypeDef comData =
 	{
 		.data[0] = sendVal,
 		.dataSize = 1,
 		.memAddress = DUR
 	};
 	
-	ADXL345_RegisterSetter(ADXL345, &comData);
+	COM_Input_RegisterSetter(ADXL345, &comData);
 }
 
 /**
@@ -260,15 +199,15 @@ void ADXL345_SetMaxTapDuration(const ADXL345_HandleTypeDef * ADXL345, uint32_t m
 	*	@param[IN]  ADXL345 	Sensor handler.
   * @retval 		Maximum tap duration represented in microsecond unit.
   */
-uint32_t ADXL345_GetMaxTapDuration(const ADXL345_HandleTypeDef * ADXL345)
+uint32_t ADXL345_GetMaxTapDuration(const COM_Input_HandleTypeDef * ADXL345)
 {
-	ADXL345_ComDataTypeDef comData =
+	COM_Input_TempDataTypeDef comData =
 	{
 		.dataSize = 1,
 		.memAddress = DUR
 	};
 	
-	ADXL345_RegisterGetter(ADXL345, &comData);
+	COM_Input_RegisterGetter(ADXL345, &comData);
 											
 	return (comData.data[0])*DUR_TIME_SCALE_FACTOR;
 }
@@ -282,18 +221,18 @@ uint32_t ADXL345_GetMaxTapDuration(const ADXL345_HandleTypeDef * ADXL345)
   * @param[IN]  dLatTime	Latency time represented in milisecond unit
   * @retval 		None
   */
-void ADXL345_SetLatencyTime(const ADXL345_HandleTypeDef * ADXL345, double latTime)
+void ADXL345_SetLatencyTime(const COM_Input_HandleTypeDef * ADXL345, double latTime)
 {
 	uint8_t	sendVal = latTime/LATENT_TIME_SCALE_FACTOR;
 	
-	const ADXL345_ComDataTypeDef comData =
+	const COM_Input_TempDataTypeDef comData =
 	{
 		.data[0] = sendVal,
 		.dataSize = 1,
 		.memAddress = LATENT
 	};
 	
-	ADXL345_RegisterSetter(ADXL345, &comData);
+	COM_Input_RegisterSetter(ADXL345, &comData);
 }
 
 /**
@@ -304,15 +243,15 @@ void ADXL345_SetLatencyTime(const ADXL345_HandleTypeDef * ADXL345, double latTim
 	*	@param[IN]  ADXL345 Sensor handler.
   * @retval 		Latency time represented in milisecond unit
   */
-double ADXL345_GetLatencyTime(const ADXL345_HandleTypeDef * ADXL345)
+double ADXL345_GetLatencyTime(const COM_Input_HandleTypeDef * ADXL345)
 {
-	ADXL345_ComDataTypeDef comData =
+	COM_Input_TempDataTypeDef comData =
 	{
 		.dataSize = 1,
 		.memAddress = LATENT
 	};
 	
-	ADXL345_RegisterGetter(ADXL345, &comData);																		
+	COM_Input_RegisterGetter(ADXL345, &comData);																		
 																				
 	return (comData.data[0])*LATENT_TIME_SCALE_FACTOR;
 }
@@ -326,18 +265,18 @@ double ADXL345_GetLatencyTime(const ADXL345_HandleTypeDef * ADXL345)
   * @param[IN]  dWinTime	Window time represented in milisecond unit
   * @retval 		None
   */
-void ADXL345_SetWindowTime(const ADXL345_HandleTypeDef * ADXL345, double winTime)
+void ADXL345_SetWindowTime(const COM_Input_HandleTypeDef * ADXL345, double winTime)
 {
 	uint8_t	sendVal = winTime/WINDOW_TIME_SCALE_FACTOR;
 	
-	const ADXL345_ComDataTypeDef comData =
+	const COM_Input_TempDataTypeDef comData =
 	{
 		.data[0] = sendVal,
 		.dataSize = 1,
 		.memAddress = WINDOW
 	};
 	
-	ADXL345_RegisterSetter(ADXL345, &comData);
+	COM_Input_RegisterSetter(ADXL345, &comData);
 }
 
 /**
@@ -348,15 +287,15 @@ void ADXL345_SetWindowTime(const ADXL345_HandleTypeDef * ADXL345, double winTime
 	*	@param[IN]  ADXL345 Sensor handler.
   * @retval 		Window time represented in milisecond unit
   */
-double ADXL345_GetWindowTime(const ADXL345_HandleTypeDef * ADXL345)
+double ADXL345_GetWindowTime(const COM_Input_HandleTypeDef * ADXL345)
 {
-	ADXL345_ComDataTypeDef comData =
+	COM_Input_TempDataTypeDef comData =
 	{
 		.dataSize = 1,
 		.memAddress = WINDOW
 	};
 	
-	ADXL345_RegisterGetter(ADXL345, &comData);
+	COM_Input_RegisterGetter(ADXL345, &comData);
 										
 	return (comData.data[0])*WINDOW_TIME_SCALE_FACTOR;
 }
@@ -369,18 +308,18 @@ double ADXL345_GetWindowTime(const ADXL345_HandleTypeDef * ADXL345)
   * @param[IN]  dActThresh	Minimum threshold value for detecting activity.
   * @retval 		None
   */
-void ADXL345_SetActivityThreshold(const ADXL345_HandleTypeDef * ADXL345, double actThresh)
+void ADXL345_SetActivityThreshold(const COM_Input_HandleTypeDef * ADXL345, double actThresh)
 {
 	uint8_t	sendVal = actThresh/ACTIVITY_THRESH_SCALE_FACTOR;
 	
-	const ADXL345_ComDataTypeDef comData =
+	const COM_Input_TempDataTypeDef comData =
 	{
 		.data[0] = sendVal,
 		.dataSize = 1,
 		.memAddress = THRESH_ACT
 	};
 	
-	ADXL345_RegisterSetter(ADXL345, &comData);
+	COM_Input_RegisterSetter(ADXL345, &comData);
 }
 
 /**
@@ -390,15 +329,15 @@ void ADXL345_SetActivityThreshold(const ADXL345_HandleTypeDef * ADXL345, double 
 	*	@param[IN]  ADXL345 Sensor handler.
   * @retval 		Minimum threshold value for detecting activity.
   */
-double ADXL345_GetActivityThreshold(const ADXL345_HandleTypeDef * ADXL345)
+double ADXL345_GetActivityThreshold(const COM_Input_HandleTypeDef * ADXL345)
 {
-	ADXL345_ComDataTypeDef comData =
+	COM_Input_TempDataTypeDef comData =
 	{
 		.dataSize = 1,
 		.memAddress = THRESH_ACT
 	};
 	
-	ADXL345_RegisterGetter(ADXL345, &comData);
+	COM_Input_RegisterGetter(ADXL345, &comData);
 													
 	return (comData.data[0])*WINDOW_TIME_SCALE_FACTOR;
 }
@@ -411,18 +350,18 @@ double ADXL345_GetActivityThreshold(const ADXL345_HandleTypeDef * ADXL345)
   * @param[IN]  dInactThresh	Minimum threshold value for detecting activity.
   * @retval 		None
   */
-void ADXL345_SetInactivityThreshold(const ADXL345_HandleTypeDef * ADXL345, double inactThresh)
+void ADXL345_SetInactivityThreshold(const COM_Input_HandleTypeDef * ADXL345, double inactThresh)
 {
 	uint8_t	sendVal = inactThresh/INACTIVITY_THRESH_SCALE_FACTOR;
 	
-	const ADXL345_ComDataTypeDef comData =
+	const COM_Input_TempDataTypeDef comData =
 	{
 		.data[0] = sendVal,
 		.dataSize = 1,
 		.memAddress = THRESH_INACT
 	};
 	
-	ADXL345_RegisterSetter(ADXL345, &comData);
+	COM_Input_RegisterSetter(ADXL345, &comData);
 }
 
 /**
@@ -432,15 +371,15 @@ void ADXL345_SetInactivityThreshold(const ADXL345_HandleTypeDef * ADXL345, doubl
 	*	@param[IN]  ADXL345 Sensor handler.
   * @retval 		Minimum threshold value for detecting inactivity.
   */
-double ADXL345_GetInactivityThreshold(const ADXL345_HandleTypeDef * ADXL345)
+double ADXL345_GetInactivityThreshold(const COM_Input_HandleTypeDef * ADXL345)
 {
-	ADXL345_ComDataTypeDef comData =
+	COM_Input_TempDataTypeDef comData =
 	{
 		.dataSize = 1,
 		.memAddress = THRESH_INACT
 	};
 	
-	ADXL345_RegisterGetter(ADXL345, &comData);
+	COM_Input_RegisterGetter(ADXL345, &comData);
 														
 	return (comData.data[0])*INACTIVITY_THRESH_SCALE_FACTOR;
 }
@@ -456,18 +395,18 @@ double ADXL345_GetInactivityThreshold(const ADXL345_HandleTypeDef * ADXL345)
   * @param[IN]  dMinInactTime	Minimum time value for detecting inactivity.
   * @retval 		None
   */
-void ADXL345_SetInactivityTime(const ADXL345_HandleTypeDef * ADXL345, uint8_t minInactTime)
+void ADXL345_SetInactivityTime(const COM_Input_HandleTypeDef * ADXL345, uint8_t minInactTime)
 {
 	uint8_t	sendVal = minInactTime/TIME_INACTIVITY_SCALE_FACTOR;
 	
-	const ADXL345_ComDataTypeDef comData =
+	const COM_Input_TempDataTypeDef comData =
 	{
 		.data[0] = sendVal,
 		.dataSize = 1,
 		.memAddress = TIME_INACT
 	};
 	
-	ADXL345_RegisterSetter(ADXL345, &comData);
+	COM_Input_RegisterSetter(ADXL345, &comData);
 }
 
 /**
@@ -480,15 +419,15 @@ void ADXL345_SetInactivityTime(const ADXL345_HandleTypeDef * ADXL345, uint8_t mi
 	*	@param[IN]  ADXL345 Sensor handler.
   * @retval 		Minimum time value for detecting inactivity.
   */
-uint8_t ADXL345_GetInactivityTime(const ADXL345_HandleTypeDef * ADXL345)
+uint8_t ADXL345_GetInactivityTime(const COM_Input_HandleTypeDef * ADXL345)
 {
-	ADXL345_ComDataTypeDef comData =
+	COM_Input_TempDataTypeDef comData =
 	{
 		.dataSize = 1,
 		.memAddress = TIME_INACT
 	};
 	
-	ADXL345_RegisterGetter(ADXL345, &comData);
+	COM_Input_RegisterGetter(ADXL345, &comData);
 																				
 	return (comData.data[0])*TIME_INACTIVITY_SCALE_FACTOR;
 }
@@ -500,16 +439,16 @@ uint8_t ADXL345_GetInactivityTime(const ADXL345_HandleTypeDef * ADXL345)
 	*	@param[IN]  pIntReg 	Contains which interrupt sources are enabled or disabled.
   * @retval 		None
   */
-void ADXL345_ConfigInterrupts(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_InterruptReg * intReg)
+void ADXL345_ConfigInterrupts(const COM_Input_HandleTypeDef * ADXL345, const ADXL345_InterruptReg * intReg)
 {
-	const ADXL345_ComDataTypeDef comData =
+	const COM_Input_TempDataTypeDef comData =
 	{
 		.data[0] = intReg->BYTE,
 		.dataSize = 1,
 		.memAddress = INT_ENABLE
 	};
 	
-	ADXL345_RegisterSetter(ADXL345, &comData);
+	COM_Input_RegisterSetter(ADXL345, &comData);
 }
 
 
@@ -520,15 +459,15 @@ void ADXL345_ConfigInterrupts(const ADXL345_HandleTypeDef * ADXL345, const ADXL3
 	*	@param[IN]  	ADXL345 Sensor handler.
   * @param[OUT] 	intReg	Status of interrupt bits.
   */
-void ADXL345_GetInterruptStatus(const ADXL345_HandleTypeDef * ADXL345, ADXL345_InterruptReg * intReg)
+void ADXL345_GetInterruptStatus(const COM_Input_HandleTypeDef * ADXL345, ADXL345_InterruptReg * intReg)
 {
-	ADXL345_ComDataTypeDef comData =
+	COM_Input_TempDataTypeDef comData =
 	{
 		.dataSize = 1,
 		.memAddress = INT_SOURCE
 	};
 	
-	ADXL345_RegisterGetter(ADXL345, &comData);
+	COM_Input_RegisterGetter(ADXL345, &comData);
 													
 	intReg->BYTE=comData.data[0];
 }
@@ -544,7 +483,7 @@ void ADXL345_GetInterruptStatus(const ADXL345_HandleTypeDef * ADXL345, ADXL345_I
 	*												Set bits of index of one  represents INT2 pins.
   * @retval 		None
   */
-void ADXL345_MapInterruptPins(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_InterruptReg pinMap)
+void ADXL345_MapInterruptPins(const COM_Input_HandleTypeDef * ADXL345, const ADXL345_InterruptReg pinMap)
 {
 	/* It is recommended that interrupt bits be configured with the interrupts disabled,
 		 preventing interrupts from being accidentally triggered during configuration.
@@ -558,14 +497,14 @@ void ADXL345_MapInterruptPins(const ADXL345_HandleTypeDef * ADXL345, const ADXL3
 	ADXL345_InterruptReg intReg = {.BYTE = ADXL345_RESET_ALL_INTERRUPTS};
 	ADXL345_ConfigInterrupts(ADXL345, &intReg);
 
-	const ADXL345_ComDataTypeDef comData =
+	const COM_Input_TempDataTypeDef comData =
 	{
 		.data[0] = pinMap.BYTE,
 		.dataSize = 1,
 		.memAddress = INT_MAP
 	};
 	
-	ADXL345_RegisterSetter(ADXL345, &comData);
+	COM_Input_RegisterSetter(ADXL345, &comData);
 	
 	/* Set all interrupts to their previous state */
 	intReg.BYTE = lastIntStatus.BYTE;
@@ -578,7 +517,7 @@ void ADXL345_MapInterruptPins(const ADXL345_HandleTypeDef * ADXL345, const ADXL3
 	*	@param[OUT]	rawDatas	Not filtered datas represented every axis
   * @retval 		
   */
-DataStatus ADXL345_GetRawDatas(const ADXL345_HandleTypeDef * ADXL345, ADXL345_RawDatas * rawDatas)
+DataStatus ADXL345_GetRawDatas(const COM_Input_HandleTypeDef * ADXL345, ADXL345_RawDatas * rawDatas)
 {
 	/* The DATA_READY, watermark, and overrun bits are always set
 		 if the corresponding events occur, regardless of the INT_ENABLE register settings. */
@@ -587,13 +526,13 @@ DataStatus ADXL345_GetRawDatas(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Ra
 	
 	if(intStatus.BIT.dataReady == true)
 	{
-		ADXL345_ComDataTypeDef comData =
+		COM_Input_TempDataTypeDef comData =
 		{
 			.dataSize = 6,
 			.memAddress = ADXL345_START_OF_DATA_REGS
 		};
 	
-		ADXL345_RegisterGetter(ADXL345, &comData);
+		COM_Input_RegisterGetter(ADXL345, &comData);
 												
 		uint16_t xData = comData.data[1]<<8 | comData.data[0];
 		uint16_t yData = comData.data[3]<<8 | comData.data[2];
@@ -603,7 +542,6 @@ DataStatus ADXL345_GetRawDatas(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Ra
 		rawDatas->rawYData = Get_HalfWord2sComplement(yData)*(16.0/512.0);
 		rawDatas->rawZData = Get_HalfWord2sComplement(zData)*(16.0/512.0);
 					
-		
 		return DATA_READY;
 	}
 	return DATA_NOT_READY;
@@ -615,16 +553,16 @@ DataStatus ADXL345_GetRawDatas(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Ra
 	*	@param[IN]	dataFormat	The content of DATA_FORMAT register.
   * @retval 		
   */
-void ADXL345_SetDataFormat(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_DataFormatReg * dataFormat)
+void ADXL345_SetDataFormat(const COM_Input_HandleTypeDef * ADXL345, const ADXL345_DataFormatReg * dataFormat)
 {
-	const ADXL345_ComDataTypeDef comData =
+	const COM_Input_TempDataTypeDef comData =
 	{
 		.data[0] = dataFormat->BYTE,
 		.dataSize = 1,
 		.memAddress = DATA_FORMAT
 	};
 	
-	ADXL345_RegisterSetter(ADXL345, &comData);
+	COM_Input_RegisterSetter(ADXL345, &comData);
 }
 
 /**
@@ -633,15 +571,15 @@ void ADXL345_SetDataFormat(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_
 	*	@param[OUT]	dataFormat	The content of DATA_FORMAT register.
   * @retval 		
   */
-void ADXL345_GetDataFormat(const ADXL345_HandleTypeDef * ADXL345, ADXL345_DataFormatReg * dataFormat)
+void ADXL345_GetDataFormat(const COM_Input_HandleTypeDef * ADXL345, ADXL345_DataFormatReg * dataFormat)
 {
-	ADXL345_ComDataTypeDef comData =
+	COM_Input_TempDataTypeDef comData =
 	{
 		.dataSize = 1,
 		.memAddress = DATA_FORMAT
 	};
 	
-	ADXL345_RegisterGetter(ADXL345, &comData);
+	COM_Input_RegisterGetter(ADXL345, &comData);
 	
 	dataFormat->BYTE = comData.data[0];
 }
@@ -652,16 +590,16 @@ void ADXL345_GetDataFormat(const ADXL345_HandleTypeDef * ADXL345, ADXL345_DataFo
 	*	@param[OUT]	powerControl	The content of POWER_CTRL register.
   * @retval 		
   */
-void ADXL345_SetPowerControl(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_PowerCtrReg * powerControl)
+void ADXL345_SetPowerControl(const COM_Input_HandleTypeDef * ADXL345, const ADXL345_PowerCtrReg * powerControl)
 {
-	const ADXL345_ComDataTypeDef comData =
+	const COM_Input_TempDataTypeDef comData =
 	{
 		.data[0] = powerControl->BYTE,
 		.dataSize = 1,
 		.memAddress = POWER_CTL
 	};
 	
-	ADXL345_RegisterSetter(ADXL345, &comData);
+	COM_Input_RegisterSetter(ADXL345, &comData);
 
 }
 
@@ -672,15 +610,15 @@ void ADXL345_SetPowerControl(const ADXL345_HandleTypeDef * ADXL345, const ADXL34
 	*	@param[OUT]	powerControl	The content of POWER_CTRL register.
   * @retval 		
   */
-void ADXL345_GetPowerControl(const ADXL345_HandleTypeDef * ADXL345, ADXL345_PowerCtrReg * powerControl)
+void ADXL345_GetPowerControl(const COM_Input_HandleTypeDef * ADXL345, ADXL345_PowerCtrReg * powerControl)
 {
-	ADXL345_ComDataTypeDef comData =
+	COM_Input_TempDataTypeDef comData =
 	{
 		.dataSize = 1,
 		.memAddress = POWER_CTL
 	};
 	
-	ADXL345_RegisterGetter(ADXL345, &comData);
+	COM_Input_RegisterGetter(ADXL345, &comData);
 	
 	powerControl->BYTE = comData.data[0];
 }

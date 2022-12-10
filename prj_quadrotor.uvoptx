@@ -152,9 +152,9 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>221</LineNumber>
+          <LineNumber>205</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134242044</Address>
+          <Address>134241670</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -163,14 +163,14 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>.\RTE\Device\STM32F407VGTx\STCubeGenerated\Src\main.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\prj_quadrotor\RTE/Device/STM32F407VGTx/STCubeGenerated/Src/main.c\221</Expression>
+          <Expression>\\prj_quadrotor\RTE/Device/STM32F407VGTx/STCubeGenerated/Src/main.c\205</Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-          <ItemText>rawDatas</ItemText>
+          <ItemText>regVal</ItemText>
         </Ww>
       </WatchWindow1>
       <MemoryWindow1>
@@ -371,8 +371,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\Source\Inputs\Src\comm_input.c</PathWithFileName>
-      <FilenameWithoutPath>comm_input.c</FilenameWithoutPath>
+      <PathWithFileName>.\Source\Inputs\Src\com_input.c</PathWithFileName>
+      <FilenameWithoutPath>com_input.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -391,7 +391,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\Source\Inputs\Sensors\Src\adxl345.c</PathWithFileName>
+      <PathWithFileName>.\Source\Sensors\Src\adxl345.c</PathWithFileName>
       <FilenameWithoutPath>adxl345.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -403,8 +403,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\Source\Inputs\Sensors\Src\hmc5883l.c</PathWithFileName>
-      <FilenameWithoutPath>hmc5883l.c</FilenameWithoutPath>
+      <PathWithFileName>.\Source\Sensors\Src\itg3205.c</PathWithFileName>
+      <FilenameWithoutPath>itg3205.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -415,8 +415,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\Source\Inputs\Sensors\Src\itg3205.c</PathWithFileName>
-      <FilenameWithoutPath>itg3205.c</FilenameWithoutPath>
+      <PathWithFileName>.\Source\Sensors\Src\hmc5883l.c</PathWithFileName>
+      <FilenameWithoutPath>hmc5883l.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>

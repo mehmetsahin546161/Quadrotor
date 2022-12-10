@@ -7,11 +7,12 @@
 #include "stm32f4xx_hal_i2c.h"
 #include <stdbool.h>
 #include "defines.h"
+#include "com_input.h"
 
 /* Exported constants --------------------------------------------------------*/
 				
-#define 	I2C_DEV_ADDR_GND  								0x53			//Not shifted
-#define 	I2C_DEV_ADDR_VCC  								0x1D			//Not shifted
+#define 	ADXL345_I2C_DEV_ADDR_GND  								0x53			//Not shifted
+#define 	ADXL345_I2C_DEV_ADDR_VCC  								0x1D			//Not shifted
 	
 #define 	TAP_THRESH_SCALE_FACTOR 					62.5
 #define 	OFFSET_SCALE_FACTOR								15.6
@@ -90,13 +91,6 @@ typedef enum
 	ADXL345_INT2 	= 1
 
 }ADXL345_InterruptPin;
-
-typedef struct
-{
-	I2C_HandleTypeDef * i2cHandle;
-	uint8_t 						i2cDevAddr;
-	
-}ADXL345_HandleTypeDef;
 
 typedef union
 {
@@ -250,47 +244,45 @@ typedef union
 }ADXL345_PowerCtrReg;
 
 /* Exported functions --------------------------------------------------------*/
-void ADXL345_Init(void);
+void ADXL345_InitSensor(const COM_Input_HandleTypeDef * ADXL345);
 
+uint8_t ADXL345_WhoAmI(const COM_Input_HandleTypeDef * ADXL345);
 
+void ADXL345_SetTapThreshold(const COM_Input_HandleTypeDef * ADXL345, double tapThresh);
+double ADXL345_GetTapThreshold(const COM_Input_HandleTypeDef * ADXL345);
 
-uint8_t ADXL345_WhoAmI(const ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_SetOffset(const COM_Input_HandleTypeDef * ADXL345, ADXL345_Axis axis, double offset);
+double ADXL345_GetOffset(const COM_Input_HandleTypeDef * ADXL345, ADXL345_Axis axis);
 
-void ADXL345_SetTapThreshold(const ADXL345_HandleTypeDef * ADXL345, double tapThresh);
-double ADXL345_GetTapThreshold(const ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_SetMaxTapDuration(const COM_Input_HandleTypeDef * ADXL345, uint32_t maxTapDur);
+uint32_t ADXL345_GetMaxTapDuration(const COM_Input_HandleTypeDef * ADXL345);
 
-void ADXL345_SetOffset(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis, double offset);
-double ADXL345_GetOffset(const ADXL345_HandleTypeDef * ADXL345, ADXL345_Axis axis);
+void ADXL345_SetLatencyTime(const COM_Input_HandleTypeDef * ADXL345, double latTime);
+double ADXL345_GetLatencyTime(const COM_Input_HandleTypeDef * ADXL345);
 
-void ADXL345_SetMaxTapDuration(const ADXL345_HandleTypeDef * ADXL345, uint32_t maxTapDur);
-uint32_t ADXL345_GetMaxTapDuration(const ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_SetWindowTime(const COM_Input_HandleTypeDef * ADXL345, double winTime);
+double ADXL345_GetWindowTime(const COM_Input_HandleTypeDef * ADXL345);
 
-void ADXL345_SetLatencyTime(const ADXL345_HandleTypeDef * ADXL345, double latTime);
-double ADXL345_GetLatencyTime(const ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_SetActivityThreshold(const COM_Input_HandleTypeDef * ADXL345, double actThresh);
+double ADXL345_GetActivityThreshold(const COM_Input_HandleTypeDef * ADXL345);
 
-void ADXL345_SetWindowTime(const ADXL345_HandleTypeDef * ADXL345, double winTime);
-double ADXL345_GetWindowTime(const ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_SetInactivityThreshold(const COM_Input_HandleTypeDef * ADXL345, double inactThresh);
+double ADXL345_GetInactivityThreshold(const COM_Input_HandleTypeDef * ADXL345);
 
-void ADXL345_SetActivityThreshold(const ADXL345_HandleTypeDef * ADXL345, double actThresh);
-double ADXL345_GetActivityThreshold(const ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_SetInactivityTime(const COM_Input_HandleTypeDef * ADXL345, uint8_t minInactTime);
+uint8_t ADXL345_GetInactivityTime(const COM_Input_HandleTypeDef * ADXL345);
 
-void ADXL345_SetInactivityThreshold(const ADXL345_HandleTypeDef * ADXL345, double inactThresh);
-double ADXL345_GetInactivityThreshold(const ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_ConfigInterrupts(const COM_Input_HandleTypeDef * ADXL345, const ADXL345_InterruptReg * intReg);
+void ADXL345_GetInterruptStatus(const COM_Input_HandleTypeDef * ADXL345, ADXL345_InterruptReg * intReg);
 
-void ADXL345_SetInactivityTime(const ADXL345_HandleTypeDef * ADXL345, uint8_t minInactTime);
-uint8_t ADXL345_GetInactivityTime(const ADXL345_HandleTypeDef * ADXL345);
+void ADXL345_MapInterruptPins(const COM_Input_HandleTypeDef * ADXL345, const ADXL345_InterruptReg pinMap);
+DataStatus ADXL345_GetRawDatas(const COM_Input_HandleTypeDef * ADXL345, ADXL345_RawDatas * rawDatas);
 
-void ADXL345_ConfigInterrupts(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_InterruptReg * intReg);
-void ADXL345_GetInterruptStatus(const ADXL345_HandleTypeDef * ADXL345, ADXL345_InterruptReg * intReg);
+void ADXL345_SetDataFormat(const COM_Input_HandleTypeDef * ADXL345, const ADXL345_DataFormatReg * dataFormat);
+void ADXL345_GetDataFormat(const COM_Input_HandleTypeDef * ADXL345, ADXL345_DataFormatReg * dataFormat);
 
-void ADXL345_MapInterruptPins(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_InterruptReg pinMap);
-DataStatus ADXL345_GetRawDatas(const ADXL345_HandleTypeDef * ADXL345, ADXL345_RawDatas * rawDatas);
-
-void ADXL345_SetDataFormat(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_DataFormatReg * dataFormat);
-void ADXL345_GetDataFormat(const ADXL345_HandleTypeDef * ADXL345, ADXL345_DataFormatReg * dataFormat);
-
-void ADXL345_SetPowerControl(const ADXL345_HandleTypeDef * ADXL345, const ADXL345_PowerCtrReg * powerControl);
-void ADXL345_GetPowerControl(const ADXL345_HandleTypeDef * ADXL345, ADXL345_PowerCtrReg * powerControl);
+void ADXL345_SetPowerControl(const COM_Input_HandleTypeDef * ADXL345, const ADXL345_PowerCtrReg * powerControl);
+void ADXL345_GetPowerControl(const COM_Input_HandleTypeDef * ADXL345, ADXL345_PowerCtrReg * powerControl);
 
 
 
