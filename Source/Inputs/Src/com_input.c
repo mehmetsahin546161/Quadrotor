@@ -10,9 +10,11 @@
 /* Exported variables --------------------------------------------------------*/
 
 
+
 /* Private function prototypes -----------------------------------------------*/
 static void COM_Input_SendThread(void* arg);
 static void COM_Input_ReceiveThread(void* arg);
+static void COM_Input_CyclicReadDatas(void* arg);
 
 /* Private variables ---------------------------------------------------------*/
 osThreadId_t	TID_comInputTxThread;
@@ -26,6 +28,10 @@ osEventFlagsId_t		EVT_comInputRx;
 
 osMutexId_t					MTX_comInputTx;
 osMutexId_t					MTX_comInputRx;
+
+osTimerId_t		TIM_cyclicReadDatas;
+
+
 
 const osThreadAttr_t comInputTxThreadAttr =
 {
@@ -69,6 +75,23 @@ const osMutexAttr_t	comInputRxMtxAttr =
 {
 	.name = "Com_Input_Rx_Mutex",
 	.attr_bits = osMutexPrioInherit
+};
+
+const osTimerAttr_t comInputCycTimAttr =
+{
+	.name = "Com_Input_Cyclic_Timer"
+};
+
+static uint8_t comInputDevIndex = 0;
+COM_Input_RawDatasTypeDef COM_Input_RawDatas[COM_INPUT_MAX_DEVICE_COUNT] = {0};
+static COM_Input_DeviceInfo COM_Input_Devices[COM_INPUT_MAX_DEVICE_COUNT] = {NULL};
+
+static COM_Input_Handlers comInputHandlers[COM_INPUT_MAX_DEVICE_TYPE_COUNT] = 
+{
+	[DEVICE_ADXL345] 	= {.initHandler = ADXL345_InitSensor, .readDataHandler = ADXL345_GetRawDatas},
+	[DEVICE_ITG3205] 	= {.initHandler = ITG3205_InitSensor, .readDataHandler = ITG3205_GetRawDatas},
+	[DEVICE_HMC5883L] = {.initHandler = NULL, .readDataHandler = NULL},
+	
 };
 
 /* Exported functions --------------------------------------------------------*/
@@ -135,6 +158,39 @@ void COM_Input_Init()
 	{
 		//Mutex couldn't be created.
 	}
+	
+	TIM_cyclicReadDatas =osTimerNew(COM_Input_CyclicReadDatas, osTimerPeriodic, NULL, &comInputCycTimAttr);
+	
+	if(TIM_cyclicReadDatas == NULL)
+	{
+		//Timer couldn't be created.
+	}
+}
+
+/**
+  * @brief  		Every sensor handler is registered to this module.
+  * @param[IN] 	comInputDev
+  * @retval 		None
+  */
+void COM_Input_AddDevice(COM_Input_HandleTypeDef * comInputDev)
+{
+	COM_Input_Devices[comInputDevIndex].comInputHandle = comInputDev;
+	
+	/* We don't need to both add and initialize the sensor modules. */
+	comInputHandlers[comInputDev->comInputDevType].initHandler();
+	
+	comInputDevIndex++;
+}
+
+/**
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  */
+uint8_t COM_Input_GetAddedDevices()
+{
+	return comInputDevIndex;
 }
 
 /**
@@ -331,4 +387,27 @@ static void COM_Input_ReceiveThread(void* arg)
 			}break;	
 		}
 	}
+}
+
+/**
+  * @brief			When it is called the datas are ready because of it starts to read datas when the function is finished
+  * @param[IN] 
+  * @retval 	
+  */
+static void COM_Input_CyclicReadDatas(void* arg)
+{
+	if(comInputDevIndex > 0)
+	{
+		DataStatus readStatus[COM_INPUT_MAX_DEVICE_COUNT] = {DATA_NOT_READY};
+		
+		for(uint8_t index = 0; index < comInputDevIndex; index++)
+		{
+			comInputHandlers[ COM_Input_Devices[index].comInputDevType ].readDataHandler( COM_Input_Devices[index].comInputHandle, (void*)&(COM_Input_RawDatas[index]));
+		
+		
+		}
+		
+		
+	}
+
 }

@@ -11,8 +11,8 @@
 
 /* Exported constants --------------------------------------------------------*/
 				
-#define 	ADXL345_I2C_DEV_ADDR_GND  								0x53			//Not shifted
-#define 	ADXL345_I2C_DEV_ADDR_VCC  								0x1D			//Not shifted
+#define 	ADXL345_I2C_DEV_ADDR_GND  				0x53			//Not shifted
+#define 	ADXL345_I2C_DEV_ADDR_VCC  				0x1D			//Not shifted
 	
 #define 	TAP_THRESH_SCALE_FACTOR 					62.5
 #define 	OFFSET_SCALE_FACTOR								15.6
@@ -22,6 +22,7 @@
 #define		ACTIVITY_THRESH_SCALE_FACTOR 			62.5
 #define		INACTIVITY_THRESH_SCALE_FACTOR 		62.5
 #define		TIME_INACTIVITY_SCALE_FACTOR 			1
+#define 	ADXL345_ACCEL_DATA_SCALE_FACTOR		(0.0312)
 
 //Register Map										
 															

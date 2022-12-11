@@ -4,7 +4,7 @@
 /* Private includes ----------------------------------------------------------*/
 #include "stdint.h"
 #include "com_input.h"
-
+#include "defines.h"
 
 /* Exported constants --------------------------------------------------------*/
 
@@ -23,51 +23,15 @@
 #define		GYRO_ZOUT_L		0x22
 #define		PWR_MGM				0x3E
 
-#define 	ITG3205_I2C_DEV_ADDR_GND  								0x68
-#define 	ITG3205_I2C_DEV_ADDR_VCC  								0x69
+#define 	ITG3205_I2C_DEV_ADDR_GND  				0x68
+#define 	ITG3205_I2C_DEV_ADDR_VCC  				0x69
 
 #define   ITG3205_START_OF_DATA_REGS 				TEMP_OUT_H
+
+#define ITG3205_GYRO_DATA_SCALE_FACTOR			(0.069565)
+
+   
 /* Exported types ------------------------------------------------------------*/
-
-
-typedef union
-{
-	struct
-	{
-		uint8_t bit0:1;
-		uint8_t bit1:1;
-		uint8_t bit2:1;
-		uint8_t bit3:1;
-		uint8_t bit4:1;
-		uint8_t bit5:1;
-		uint8_t bit6:1;
-		uint8_t bit7:1;
-	
-	}BIT;
-	
-	uint8_t BYTE;
-
-}ITG3205_WhoAmI_Reg;
-
-
-typedef union
-{
-	struct
-	{
-		uint8_t bit0:1;
-		uint8_t bit1:1;
-		uint8_t bit2:1;
-		uint8_t bit3:1;
-		uint8_t bit4:1;
-		uint8_t bit5:1;
-		uint8_t bit6:1;
-		uint8_t bit7:1;
-	
-	}BIT;
-	
-	uint8_t BYTE;
-
-}ITG3205_SampleRateDividerReg;
 
 typedef enum
 {
@@ -155,7 +119,7 @@ typedef union
 		ITG3205_IntActLevel intActLevel : 1;
 		ITG3205_IntDriveType intDriveType : 1;
 		ITG3205_IntLatchMode intLatchMode : 1;
-		ITG3205_IntLatchClearMode : 1;
+		ITG3205_IntLatchClearMode intLatchClearMode: 1;
 		uint8_t dummy1 : 1;
 		ITG3205_EnableIntDevReady enableintDevReady : 1;
 		uint8_t dummy2 : 1;
@@ -262,8 +226,8 @@ void ITG3205_InitSensor(const COM_Input_HandleTypeDef * ITG3205);
 
 uint8_t ITG3205_WhoAmI(const COM_Input_HandleTypeDef * ITG3205);
 
-void ITG3205_SetSampleRateDivider(const COM_Input_HandleTypeDef * ITG3205, const ITG3205_SampleRateDividerReg * sampleRateDiv);
-void ITG3205_GetSampleRateDivider(const COM_Input_HandleTypeDef * ITG3205, ITG3205_SampleRateDividerReg * sampleRateDiv);
+void ITG3205_SetSampleRateDivider(const COM_Input_HandleTypeDef * ITG3205, uint8_t sampleRateDiv);
+uint8_t ITG3205_GetSampleRateDivider(const COM_Input_HandleTypeDef * ITG3205);
 
 void ITG3205_SetFullScaleAndLowPass(const COM_Input_HandleTypeDef * ITG3205, const ITG3205_FullScaleAndLowPassReg * fullScaleAndLowPass);
 void ITG3205_GetFullScaleAndLowPass(const COM_Input_HandleTypeDef * ITG3205, ITG3205_FullScaleAndLowPassReg * fullScaleAndLowPass);
@@ -273,7 +237,7 @@ void ITG3205_GetInterruptConfig(const COM_Input_HandleTypeDef * ITG3205, ITG3205
 
 void ITG3205_GetInterruptStatus(const COM_Input_HandleTypeDef * ITG3205, ITG3205_IntStatusReg * intStatus);
 
-void ITG3205_GetRawDatas(const COM_Input_HandleTypeDef * ITG3205, ITG3205_RawDatas * rawDatas);
+DataStatus ITG3205_GetRawDatas(const COM_Input_HandleTypeDef * ITG3205, ITG3205_RawDatas * rawDatas);
 
 void ITG3205_SetPowerManagement(const COM_Input_HandleTypeDef * ITG3205, const ITG3205_PowerManagementReg * powerManagement);
 void ITG3205_GetPowerManagement(const COM_Input_HandleTypeDef * ITG3205, ITG3205_PowerManagementReg * powerManagement);

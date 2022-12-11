@@ -200,10 +200,12 @@ void app_main (void* arg)
 	COM_Input_Init();
 	ADXL345_InitSensor(&ADXL345);
 	
-	uint8_t regVal = ITG3205_WhoAmI(&ITG3205);
+	DataStatus readStatus;
+	ADXL345_RawDatas adxl345RawDatas;
 	
 	while(true)
 	{
+		 readStatus = ADXL345_GetRawDatas(&ADXL345, &adxl345RawDatas);
 		
 	}
 }

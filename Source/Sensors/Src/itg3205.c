@@ -12,6 +12,21 @@
   */
 void ITG3205_InitSensor(const COM_Input_HandleTypeDef * ITG3205)
 {
+	ITG3205_FullScaleAndLowPassReg fullSelAndLowpass =
+	{
+		.BIT.lowPassFilter = ITG3205_LOWPASS_98HZ_SAMPLE_RATE_1kHZ,
+		.BIT.fullScale = ITG3205_FS_2000_DEG_PER_SEC
+	};
+	ITG3205_SetFullScaleAndLowPass(ITG3205, &fullSelAndLowpass);
+	ITG3205_SetSampleRateDivider(ITG3205, 7);
+	
+	ITG3205_InterruptConfigReg intConfig = 
+	{
+		.BIT.intLatchClearMode = ITG3205_CLEAR_WHEN_STATUS_REG_READ,
+		.BIT.enableintDevReady = ITG3205_NOT_ENABLE_INT_WHEN_DEV_READY,
+		.BIT.enableIntDataReady = ITG3205_ENABLE_INT_WHEN_DATA_READY
+	};
+	ITG3205_SetInterruptConfig(ITG3205, &intConfig);
 
 }
 
@@ -40,9 +55,9 @@ uint8_t ITG3205_WhoAmI(const COM_Input_HandleTypeDef * ITG3205)
   * @param[OUT]	None
   * @retval 		None
   */
-void ITG3205_SetSampleRateDivider(const COM_Input_HandleTypeDef * ITG3205, const ITG3205_SampleRateDividerReg * sampleRateDiv)
+void ITG3205_SetSampleRateDivider(const COM_Input_HandleTypeDef * ITG3205, uint8_t sampleRateDiv)
 {
-	uint8_t sendVal = sampleRateDiv->BYTE;
+	uint8_t sendVal = sampleRateDiv;
 		
 	const COM_Input_TempDataTypeDef comData =
 	{
@@ -60,7 +75,7 @@ void ITG3205_SetSampleRateDivider(const COM_Input_HandleTypeDef * ITG3205, const
   * @param[OUT]	None
   * @retval 		None
   */
-void ITG3205_GetSampleRateDivider(const COM_Input_HandleTypeDef * ITG3205, ITG3205_SampleRateDividerReg * sampleRateDiv)
+uint8_t ITG3205_GetSampleRateDivider(const COM_Input_HandleTypeDef * ITG3205)
 {
 	COM_Input_TempDataTypeDef comData =
 	{
@@ -70,7 +85,7 @@ void ITG3205_GetSampleRateDivider(const COM_Input_HandleTypeDef * ITG3205, ITG32
 	
 	COM_Input_RegisterGetter(ITG3205, &comData);
 	
-	sampleRateDiv->BYTE = comData.data[0];
+	return comData.data[0];
 }
 
 /**
@@ -176,26 +191,33 @@ void ITG3205_GetInterruptStatus(const COM_Input_HandleTypeDef * ITG3205, ITG3205
   * @param[OUT]	None
   * @retval 		None
   */
-void ITG3205_GetRawDatas(const COM_Input_HandleTypeDef * ITG3205, ITG3205_RawDatas * rawDatas)
+DataStatus ITG3205_GetRawDatas(const COM_Input_HandleTypeDef * ITG3205, ITG3205_RawDatas * rawDatas)
 {
-	COM_Input_TempDataTypeDef comData =
-	{
-		.dataSize = 8,
-		.memAddress = ITG3205_START_OF_DATA_REGS
-	};
+	ITG3205_IntStatusReg intStatusReg;
+	ITG3205_GetInterruptStatus(ITG3205, &intStatusReg);
 	
-	COM_Input_RegisterGetter(ITG3205, &comData);
-							
-	uint16_t temperature = comData.data[0]<<8 | comData.data[1];
-	uint16_t xData = comData.data[2]<<8 | comData.data[3];
-	uint16_t yData = comData.data[4]<<8 | comData.data[5];
-	uint16_t zData = comData.data[6]<<8 | comData.data[7];
-
-	//TODO:Bu sabitleri incele
-	rawDatas->rawTemp	 = Get_HalfWord2sComplement(temperature)*(16.0/512.0);
-	rawDatas->rawXData = Get_HalfWord2sComplement(xData)*(16.0/512.0);
-	rawDatas->rawYData = Get_HalfWord2sComplement(yData)*(16.0/512.0);
-	rawDatas->rawZData = Get_HalfWord2sComplement(zData)*(16.0/512.0);
+	if(intStatusReg.BIT.intDataReady == ITG3205_INTERRUPT_DATA_READY)
+	{
+		COM_Input_TempDataTypeDef comData =
+		{
+			.dataSize = 8,
+			.memAddress = ITG3205_START_OF_DATA_REGS
+		};
+		
+		COM_Input_RegisterGetter(ITG3205, &comData);
+								
+		uint16_t temperature = comData.data[0]<<8 | comData.data[1];
+		uint16_t xData = comData.data[2]<<8 | comData.data[3];
+		uint16_t yData = comData.data[4]<<8 | comData.data[5];
+		uint16_t zData = comData.data[6]<<8 | comData.data[7];
+	
+		rawDatas->rawXData = Get_HalfWord2sComplement(xData)*ITG3205_GYRO_DATA_SCALE_FACTOR;
+		rawDatas->rawYData = Get_HalfWord2sComplement(yData)*ITG3205_GYRO_DATA_SCALE_FACTOR;
+		rawDatas->rawZData = Get_HalfWord2sComplement(zData)*ITG3205_GYRO_DATA_SCALE_FACTOR;
+		
+		return DATA_READY;
+	}
+	return DATA_NOT_READY;
 }
 
 /**

@@ -538,9 +538,9 @@ DataStatus ADXL345_GetRawDatas(const COM_Input_HandleTypeDef * ADXL345, ADXL345_
 		uint16_t yData = comData.data[3]<<8 | comData.data[2];
 		uint16_t zData = comData.data[5]<<8 | comData.data[4];
 		
-		rawDatas->rawXData = Get_HalfWord2sComplement(xData)*(16.0/512.0);
-		rawDatas->rawYData = Get_HalfWord2sComplement(yData)*(16.0/512.0);
-		rawDatas->rawZData = Get_HalfWord2sComplement(zData)*(16.0/512.0);
+		rawDatas->rawXData = Get_HalfWord2sComplement(xData)*ADXL345_ACCEL_DATA_SCALE_FACTOR;//(16.0/512.0);
+		rawDatas->rawYData = Get_HalfWord2sComplement(yData)*ADXL345_ACCEL_DATA_SCALE_FACTOR;//(16.0/512.0);
+		rawDatas->rawZData = Get_HalfWord2sComplement(zData)*ADXL345_ACCEL_DATA_SCALE_FACTOR;//(16.0/512.0);
 					
 		return DATA_READY;
 	}
