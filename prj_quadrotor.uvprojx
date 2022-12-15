@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>.\Source\Inputs\Inc;.\Source\Sensors\Inc;.\Source\Common\Inc;.\Source\Calculation\Inc</IncludePath>
+              <IncludePath>.\Source\Common\Inc;.\Source\Inputs\Inc;.\Source\Sensors\Inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>

@@ -517,34 +517,23 @@ void ADXL345_MapInterruptPins(const COM_Input_HandleTypeDef * ADXL345, const ADX
 	*	@param[OUT]	rawDatas	Not filtered datas represented every axis
   * @retval 		
   */
-DataStatus ADXL345_GetRawDatas(const COM_Input_HandleTypeDef * ADXL345, ADXL345_RawDatas * rawDatas)
+void ADXL345_GetRawDatas(const COM_Input_HandleTypeDef * ADXL345, ADXL345_RawDatas * rawDatas)
 {
-	/* The DATA_READY, watermark, and overrun bits are always set
-		 if the corresponding events occur, regardless of the INT_ENABLE register settings. */
-	ADXL345_InterruptReg intStatus;
-	ADXL345_GetInterruptStatus(ADXL345, &intStatus);
-	
-	if(intStatus.BIT.dataReady == true)
+	COM_Input_TempDataTypeDef comData =
 	{
-		COM_Input_TempDataTypeDef comData =
-		{
-			.dataSize = 6,
-			.memAddress = ADXL345_START_OF_DATA_REGS
-		};
+		.dataSize = 6,
+		.memAddress = ADXL345_START_OF_DATA_REGS
+	};
 	
-		COM_Input_RegisterGetter(ADXL345, &comData);
-												
-		uint16_t xData = comData.data[1]<<8 | comData.data[0];
-		uint16_t yData = comData.data[3]<<8 | comData.data[2];
-		uint16_t zData = comData.data[5]<<8 | comData.data[4];
-		
-		rawDatas->rawXData = Get_HalfWord2sComplement(xData)*ADXL345_ACCEL_DATA_SCALE_FACTOR;//(16.0/512.0);
-		rawDatas->rawYData = Get_HalfWord2sComplement(yData)*ADXL345_ACCEL_DATA_SCALE_FACTOR;//(16.0/512.0);
-		rawDatas->rawZData = Get_HalfWord2sComplement(zData)*ADXL345_ACCEL_DATA_SCALE_FACTOR;//(16.0/512.0);
-					
-		return DATA_READY;
-	}
-	return DATA_NOT_READY;
+	COM_Input_RegisterGetter(ADXL345, &comData);
+											
+	uint16_t xData = comData.data[1]<<8 | comData.data[0];
+	uint16_t yData = comData.data[3]<<8 | comData.data[2];
+	uint16_t zData = comData.data[5]<<8 | comData.data[4];
+	
+	rawDatas->rawXData = Get_HalfWord2sComplement(xData)*ADXL345_ACCEL_DATA_SCALE_FACTOR;//(16.0/512.0);
+	rawDatas->rawYData = Get_HalfWord2sComplement(yData)*ADXL345_ACCEL_DATA_SCALE_FACTOR;//(16.0/512.0);
+	rawDatas->rawZData = Get_HalfWord2sComplement(zData)*ADXL345_ACCEL_DATA_SCALE_FACTOR;//(16.0/512.0);
 }
 
 /**

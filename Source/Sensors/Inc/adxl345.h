@@ -277,7 +277,7 @@ void ADXL345_ConfigInterrupts(const COM_Input_HandleTypeDef * ADXL345, const ADX
 void ADXL345_GetInterruptStatus(const COM_Input_HandleTypeDef * ADXL345, ADXL345_InterruptReg * intReg);
 
 void ADXL345_MapInterruptPins(const COM_Input_HandleTypeDef * ADXL345, const ADXL345_InterruptReg pinMap);
-DataStatus ADXL345_GetRawDatas(const COM_Input_HandleTypeDef * ADXL345, ADXL345_RawDatas * rawDatas);
+void ADXL345_GetRawDatas(const COM_Input_HandleTypeDef * ADXL345, ADXL345_RawDatas * rawDatas);
 
 void ADXL345_SetDataFormat(const COM_Input_HandleTypeDef * ADXL345, const ADXL345_DataFormatReg * dataFormat);
 void ADXL345_GetDataFormat(const COM_Input_HandleTypeDef * ADXL345, ADXL345_DataFormatReg * dataFormat);

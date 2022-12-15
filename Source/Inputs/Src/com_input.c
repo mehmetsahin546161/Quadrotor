@@ -2,7 +2,8 @@
 #include "main.h"
 #include "cmsis_os2.h"
 #include "adxl345.h"
-
+#include "adxl345.h"
+#include "itg3205.h"
 
 /* Private define ------------------------------------------------------------*/
 #define MAX_COM_INPUT_DATA_CNT			20
@@ -14,7 +15,6 @@
 /* Private function prototypes -----------------------------------------------*/
 static void COM_Input_SendThread(void* arg);
 static void COM_Input_ReceiveThread(void* arg);
-static void COM_Input_CyclicReadDatas(void* arg);
 
 /* Private variables ---------------------------------------------------------*/
 osThreadId_t	TID_comInputTxThread;
@@ -28,10 +28,6 @@ osEventFlagsId_t		EVT_comInputRx;
 
 osMutexId_t					MTX_comInputTx;
 osMutexId_t					MTX_comInputRx;
-
-osTimerId_t		TIM_cyclicReadDatas;
-
-
 
 const osThreadAttr_t comInputTxThreadAttr =
 {
@@ -77,21 +73,14 @@ const osMutexAttr_t	comInputRxMtxAttr =
 	.attr_bits = osMutexPrioInherit
 };
 
-const osTimerAttr_t comInputCycTimAttr =
-{
-	.name = "Com_Input_Cyclic_Timer"
-};
-
 static uint8_t comInputDevIndex = 0;
-COM_Input_RawDatasTypeDef COM_Input_RawDatas[COM_INPUT_MAX_DEVICE_COUNT] = {0};
-static COM_Input_DeviceInfo COM_Input_Devices[COM_INPUT_MAX_DEVICE_COUNT] = {NULL};
+static COM_Input_HandleTypeDef * COM_Input_Devices[COM_INPUT_MAX_DEVICE_COUNT] = {NULL};
 
 static COM_Input_Handlers comInputHandlers[COM_INPUT_MAX_DEVICE_TYPE_COUNT] = 
 {
-	[DEVICE_ADXL345] 	= {.initHandler = ADXL345_InitSensor, .readDataHandler = ADXL345_GetRawDatas},
-	[DEVICE_ITG3205] 	= {.initHandler = ITG3205_InitSensor, .readDataHandler = ITG3205_GetRawDatas},
-	[DEVICE_HMC5883L] = {.initHandler = NULL, .readDataHandler = NULL},
-	
+	[COM_DEVICE_TYPE_ADXL345] 	= {.initHandler = ADXL345_InitSensor },
+	[COM_DEVICE_TYPE_ITG3205] 	= {.initHandler = ITG3205_InitSensor },
+	[COM_DEVICE_TYPE_HMC5883L]  = {.initHandler = NULL }
 };
 
 /* Exported functions --------------------------------------------------------*/
@@ -158,13 +147,6 @@ void COM_Input_Init()
 	{
 		//Mutex couldn't be created.
 	}
-	
-	TIM_cyclicReadDatas =osTimerNew(COM_Input_CyclicReadDatas, osTimerPeriodic, NULL, &comInputCycTimAttr);
-	
-	if(TIM_cyclicReadDatas == NULL)
-	{
-		//Timer couldn't be created.
-	}
 }
 
 /**
@@ -174,10 +156,10 @@ void COM_Input_Init()
   */
 void COM_Input_AddDevice(COM_Input_HandleTypeDef * comInputDev)
 {
-	COM_Input_Devices[comInputDevIndex].comInputHandle = comInputDev;
+	COM_Input_Devices[comInputDevIndex] = comInputDev;
 	
-	/* We don't need to both add and initialize the sensor modules. */
-	comInputHandlers[comInputDev->comInputDevType].initHandler();
+	/* We don't need to both add and initialize the sensor modules. Just add. */
+	comInputHandlers[comInputDev->comInputDevType].initHandler(comInputDev);
 	
 	comInputDevIndex++;
 }
@@ -387,27 +369,4 @@ static void COM_Input_ReceiveThread(void* arg)
 			}break;	
 		}
 	}
-}
-
-/**
-  * @brief			When it is called the datas are ready because of it starts to read datas when the function is finished
-  * @param[IN] 
-  * @retval 	
-  */
-static void COM_Input_CyclicReadDatas(void* arg)
-{
-	if(comInputDevIndex > 0)
-	{
-		DataStatus readStatus[COM_INPUT_MAX_DEVICE_COUNT] = {DATA_NOT_READY};
-		
-		for(uint8_t index = 0; index < comInputDevIndex; index++)
-		{
-			comInputHandlers[ COM_Input_Devices[index].comInputDevType ].readDataHandler( COM_Input_Devices[index].comInputHandle, (void*)&(COM_Input_RawDatas[index]));
-		
-		
-		}
-		
-		
-	}
-
 }

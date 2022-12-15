@@ -55,11 +55,15 @@
 
 /* USER CODE BEGIN PV */
 extern I2C_HandleTypeDef hi2c1;
-const COM_Input_HandleTypeDef ADXL345 = {	.i2cHandle = &hi2c1,
-																				  .i2cDevAddr = ADXL345_I2C_DEV_ADDR_GND };
+COM_Input_HandleTypeDef ADXL345 = {	.i2cHandle = &hi2c1,
+																		.i2cDevAddr = ADXL345_I2C_DEV_ADDR_GND,
+																		.comInputDevType = COM_DEVICE_TYPE_ADXL345 };
 
-const COM_Input_HandleTypeDef ITG3205 = {	.i2cHandle = &hi2c1,
-																				  .i2cDevAddr = ITG3205_I2C_DEV_ADDR_GND };
+COM_Input_HandleTypeDef ITG3205 = {	.i2cHandle = &hi2c1,
+																		.i2cDevAddr = ITG3205_I2C_DEV_ADDR_GND,
+																		.comInputDevType = COM_DEVICE_TYPE_ITG3205 };
+
+ITG3205_RawDatas rawDatas = {0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -198,15 +202,30 @@ void SystemClock_Config(void)
 void app_main (void* arg)
 {
 	COM_Input_Init();
-	ADXL345_InitSensor(&ADXL345);
 	
-	DataStatus readStatus;
-	ADXL345_RawDatas adxl345RawDatas;
+	COM_Input_AddDevice(&ADXL345);
+	COM_Input_AddDevice(&ITG3205);
+	
+	
+	ITG3205_FullScaleAndLowPassReg fullSelAndLowpass;
+	ITG3205_GetFullScaleAndLowPass(&ITG3205, &fullSelAndLowpass);
+	
+	uint8_t sampRate = ITG3205_GetSampleRateDivider(&ITG3205);
+	
+	ITG3205_InterruptConfigReg intConfig;
+	ITG3205_GetInterruptConfig(&ITG3205, &intConfig);
+	
+	ITG3205_PowerManagementReg powerManagement;
+	ITG3205_GetPowerManagement(&ITG3205, &powerManagement);
+	
+	
+	uint8_t me = ITG3205_WhoAmI(&ITG3205);
+	DataStatus readStatus = DATA_NOT_READY;
+	
 	
 	while(true)
 	{
-		 readStatus = ADXL345_GetRawDatas(&ADXL345, &adxl345RawDatas);
-		
+		ITG3205_GetRawDatas(&ITG3205, &rawDatas);
 	}
 }
 /* USER CODE END 4 */

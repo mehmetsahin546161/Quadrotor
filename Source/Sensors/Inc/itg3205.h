@@ -1,10 +1,13 @@
-#ifndef _ITG3205_H
-#define _ITG3205_H
+#ifndef ITG3205_H
+#define ITG3205_H
 
 /* Private includes ----------------------------------------------------------*/
-#include "stdint.h"
-#include "com_input.h"
+#include "stm32f407xx.h"
+#include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_i2c.h"
+#include <stdbool.h>
 #include "defines.h"
+#include "com_input.h"
 
 /* Exported constants --------------------------------------------------------*/
 
@@ -28,7 +31,7 @@
 
 #define   ITG3205_START_OF_DATA_REGS 				TEMP_OUT_H
 
-#define ITG3205_GYRO_DATA_SCALE_FACTOR			(0.069565)
+#define 	ITG3205_GYRO_DATA_SCALE_FACTOR		(0.069565)			/* 1 LSB -----> 0.069565 °/sec */
 
    
 /* Exported types ------------------------------------------------------------*/
@@ -116,14 +119,14 @@ typedef union
 {
 	struct
 	{
-		ITG3205_IntActLevel intActLevel : 1;
-		ITG3205_IntDriveType intDriveType : 1;
-		ITG3205_IntLatchMode intLatchMode : 1;
-		ITG3205_IntLatchClearMode intLatchClearMode: 1;
-		uint8_t dummy1 : 1;
-		ITG3205_EnableIntDevReady enableintDevReady : 1;
-		uint8_t dummy2 : 1;
 		ITG3205_EnableIntDataReady enableIntDataReady : 1;
+		uint8_t dummy2 : 1;
+		ITG3205_EnableIntDevReady enableintDevReady : 1;
+		uint8_t dummy1 : 1;
+		ITG3205_IntLatchClearMode intLatchClearMode: 1;
+		ITG3205_IntLatchMode intLatchMode : 1;
+		ITG3205_IntDriveType intDriveType : 1;
+		ITG3205_IntActLevel intActLevel : 1;
 		
 	}BIT;
 
@@ -237,9 +240,9 @@ void ITG3205_GetInterruptConfig(const COM_Input_HandleTypeDef * ITG3205, ITG3205
 
 void ITG3205_GetInterruptStatus(const COM_Input_HandleTypeDef * ITG3205, ITG3205_IntStatusReg * intStatus);
 
-DataStatus ITG3205_GetRawDatas(const COM_Input_HandleTypeDef * ITG3205, ITG3205_RawDatas * rawDatas);
+void ITG3205_GetRawDatas(const COM_Input_HandleTypeDef * ITG3205, ITG3205_RawDatas * rawDatas);
 
 void ITG3205_SetPowerManagement(const COM_Input_HandleTypeDef * ITG3205, const ITG3205_PowerManagementReg * powerManagement);
 void ITG3205_GetPowerManagement(const COM_Input_HandleTypeDef * ITG3205, ITG3205_PowerManagementReg * powerManagement);
 
-#endif //_ITG3205_H
+#endif //ITG3205_H

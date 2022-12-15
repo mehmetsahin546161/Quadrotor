@@ -1,6 +1,13 @@
-#include "itg3205.h"
-#include "calc.h"
+#include 	"itg3205.h"
+#include 	"cmsis_os2.h"
+#include 	"com_input.h"
+#include	"defines.h"
+#include   "calc.h"
 
+/* Private constants ---------------------------------------------------------*/
+#define ITG3205_ZERO_RATE_X_VALUE   (0.9)
+#define ITG3205_ZERO_RATE_Y_VALUE   (0.7)
+#define ITG3205_ZERO_RATE_Z_VALUE   (0.7)
 
 /* Exported functions --------------------------------------------------------*/
 
@@ -12,21 +19,6 @@
   */
 void ITG3205_InitSensor(const COM_Input_HandleTypeDef * ITG3205)
 {
-	ITG3205_FullScaleAndLowPassReg fullSelAndLowpass =
-	{
-		.BIT.lowPassFilter = ITG3205_LOWPASS_98HZ_SAMPLE_RATE_1kHZ,
-		.BIT.fullScale = ITG3205_FS_2000_DEG_PER_SEC
-	};
-	ITG3205_SetFullScaleAndLowPass(ITG3205, &fullSelAndLowpass);
-	ITG3205_SetSampleRateDivider(ITG3205, 7);
-	
-	ITG3205_InterruptConfigReg intConfig = 
-	{
-		.BIT.intLatchClearMode = ITG3205_CLEAR_WHEN_STATUS_REG_READ,
-		.BIT.enableintDevReady = ITG3205_NOT_ENABLE_INT_WHEN_DEV_READY,
-		.BIT.enableIntDataReady = ITG3205_ENABLE_INT_WHEN_DATA_READY
-	};
-	ITG3205_SetInterruptConfig(ITG3205, &intConfig);
 
 }
 
@@ -191,33 +183,24 @@ void ITG3205_GetInterruptStatus(const COM_Input_HandleTypeDef * ITG3205, ITG3205
   * @param[OUT]	None
   * @retval 		None
   */
-DataStatus ITG3205_GetRawDatas(const COM_Input_HandleTypeDef * ITG3205, ITG3205_RawDatas * rawDatas)
+void ITG3205_GetRawDatas(const COM_Input_HandleTypeDef * ITG3205, ITG3205_RawDatas * rawDatas)
 {
-	ITG3205_IntStatusReg intStatusReg;
-	ITG3205_GetInterruptStatus(ITG3205, &intStatusReg);
-	
-	if(intStatusReg.BIT.intDataReady == ITG3205_INTERRUPT_DATA_READY)
+	COM_Input_TempDataTypeDef comData =
 	{
-		COM_Input_TempDataTypeDef comData =
-		{
-			.dataSize = 8,
-			.memAddress = ITG3205_START_OF_DATA_REGS
-		};
-		
-		COM_Input_RegisterGetter(ITG3205, &comData);
-								
-		uint16_t temperature = comData.data[0]<<8 | comData.data[1];
-		uint16_t xData = comData.data[2]<<8 | comData.data[3];
-		uint16_t yData = comData.data[4]<<8 | comData.data[5];
-		uint16_t zData = comData.data[6]<<8 | comData.data[7];
+		.dataSize = 8,
+		.memAddress = ITG3205_START_OF_DATA_REGS
+	};
 	
-		rawDatas->rawXData = Get_HalfWord2sComplement(xData)*ITG3205_GYRO_DATA_SCALE_FACTOR;
-		rawDatas->rawYData = Get_HalfWord2sComplement(yData)*ITG3205_GYRO_DATA_SCALE_FACTOR;
-		rawDatas->rawZData = Get_HalfWord2sComplement(zData)*ITG3205_GYRO_DATA_SCALE_FACTOR;
-		
-		return DATA_READY;
-	}
-	return DATA_NOT_READY;
+	COM_Input_RegisterGetter(ITG3205, &comData);
+							
+	uint16_t temperature = comData.data[0]<<8 | comData.data[1];
+	uint16_t xData = comData.data[2]<<8 | comData.data[3];
+	uint16_t yData = comData.data[4]<<8 | comData.data[5];
+	uint16_t zData = comData.data[6]<<8 | comData.data[7];
+	
+	rawDatas->rawXData = DEGREE_TO_RADIAN(Get_HalfWord2sComplement(xData)*ITG3205_GYRO_DATA_SCALE_FACTOR) - ITG3205_ZERO_RATE_X_VALUE;
+	rawDatas->rawYData = DEGREE_TO_RADIAN(Get_HalfWord2sComplement(yData)*ITG3205_GYRO_DATA_SCALE_FACTOR) - ITG3205_ZERO_RATE_Y_VALUE;
+	rawDatas->rawZData = DEGREE_TO_RADIAN(Get_HalfWord2sComplement(zData)*ITG3205_GYRO_DATA_SCALE_FACTOR) - ITG3205_ZERO_RATE_Z_VALUE;
 }
 
 /**
