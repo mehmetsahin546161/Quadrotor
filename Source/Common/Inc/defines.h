@@ -3,6 +3,8 @@
 
 
 /* Exported defines ----------------------------------------------------------*/
+#define INVALID_DATA (0xFF)
+#define SEC_TO_MS			1000
 
 /* Exported types ------------------------------------------------------------*/
 typedef enum
@@ -12,7 +14,7 @@ typedef enum
 
 }DataStatus;
 
-#define INVALID_DATA (0xFF)
+
 
 
 

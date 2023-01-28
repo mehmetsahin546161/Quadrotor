@@ -5,239 +5,226 @@
 #include   "calc.h"
 
 /* Private constants ---------------------------------------------------------*/
-#define ITG3205_ZERO_RATE_X_VALUE   (0.9)
-#define ITG3205_ZERO_RATE_Y_VALUE   (0.7)
-#define ITG3205_ZERO_RATE_Z_VALUE   (0.7)
+
 
 /* Exported functions --------------------------------------------------------*/
 
-/**
+/**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   * @brief  		Sets basic functionalities.
   * @param[IN] 	None
   * @param[OUT]	None
   * @retval 		None
-  */
-void ITG3205_InitSensor(const COM_Input_HandleTypeDef * ITG3205)
+  *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void ITG3205_InitSensor(ComInput_Handle * ITG3205)
 {
-
-}
-
-/**
-  * @brief  		None
-  * @param[IN] 	None
-  * @param[OUT]	None
-  * @retval 		None
-  */
-uint8_t ITG3205_WhoAmI(const COM_Input_HandleTypeDef * ITG3205)
-{
-	COM_Input_TempDataTypeDef comData =
+	/* Register sensor for com input. */
+	ComInput_AddInputDevice(ITG3205);
+	
+	ITG3205_FullScaleAndLowPassReg fullScaleAndLowPassReg = 
 	{
-		.dataSize = 1,
-		.memAddress = WHO_AM_I
+		.BIT.fullScale = ITG3205_FS_2000_DEG_PER_SEC,
+		.BIT.lowPassFilter = ITG3205_LOWPASS_256HZ_SAMPLE_RATE_8kHZ
 	};
 	
-	COM_Input_RegisterGetter(ITG3205, &comData);
-											
-	return comData.data[0];
+	ITG3205_SetFullScaleAndLowPass(ITG3205, &fullScaleAndLowPassReg);
+	//ITG3205_SetSampleRateDivider(ITG3205, 7);
+
 }
 
-/**
+/**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   * @brief  		None
   * @param[IN] 	None
   * @param[OUT]	None
   * @retval 		None
-  */
-void ITG3205_SetSampleRateDivider(const COM_Input_HandleTypeDef * ITG3205, uint8_t sampleRateDiv)
+  *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+uint8_t ITG3205_WhoAmI(ComInput_Handle * ITG3205)
+{
+	COM_INPUT_I2C_DATA(ITG3205).dataSize = 1;
+	COM_INPUT_I2C_DATA(ITG3205).memAddress = ITG3205_WHO_AM_I;
+	COM_INPUT_I2C_DATA(ITG3205).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	
+	ComInput_RegisterGetter(ITG3205);
+											
+	return COM_INPUT_I2C_DATA(ITG3205).data[0];
+}
+
+/**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void ITG3205_SetSampleRateDivider(ComInput_Handle * ITG3205, uint8_t sampleRateDiv)
 {
 	uint8_t sendVal = sampleRateDiv;
 		
-	const COM_Input_TempDataTypeDef comData =
-	{
-		.data[0] = sendVal,
-		.dataSize = 1,
-		.memAddress = SMPLRT_DIV
-	};
-		
-	COM_Input_RegisterSetter(ITG3205, &comData);
+	COM_INPUT_I2C_DATA(ITG3205).data[0] = sendVal;
+	COM_INPUT_I2C_DATA(ITG3205).dataSize = 1;
+	COM_INPUT_I2C_DATA(ITG3205).memAddress = ITG3205_SMPLRT_DIV;
+	COM_INPUT_I2C_DATA(ITG3205).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	
+	ComInput_RegisterSetter(ITG3205);
 }
 
-/**
+/**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   * @brief  		None
   * @param[IN] 	None
   * @param[OUT]	None
   * @retval 		None
-  */
-uint8_t ITG3205_GetSampleRateDivider(const COM_Input_HandleTypeDef * ITG3205)
+  *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+uint8_t ITG3205_GetSampleRateDivider(ComInput_Handle * ITG3205)
 {
-	COM_Input_TempDataTypeDef comData =
-	{
-		.dataSize = 1,
-		.memAddress = SMPLRT_DIV
-	};
+	COM_INPUT_I2C_DATA(ITG3205).dataSize = 1;
+	COM_INPUT_I2C_DATA(ITG3205).memAddress = ITG3205_SMPLRT_DIV;
+	COM_INPUT_I2C_DATA(ITG3205).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	COM_Input_RegisterGetter(ITG3205, &comData);
+	ComInput_RegisterGetter(ITG3205);
 	
-	return comData.data[0];
+	return COM_INPUT_I2C_DATA(ITG3205).data[0];
 }
 
-/**
+/**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   * @brief  		None
   * @param[IN] 	None
   * @param[OUT]	None
   * @retval 		None
-  */
-void ITG3205_SetFullScaleAndLowPass(const COM_Input_HandleTypeDef * ITG3205, const ITG3205_FullScaleAndLowPassReg * fullScaleAndLowPass)
+  *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void ITG3205_SetFullScaleAndLowPass(ComInput_Handle * ITG3205, const ITG3205_FullScaleAndLowPassReg * fullScaleAndLowPass)
 {
 	uint8_t sendVal = fullScaleAndLowPass->BYTE;
-		
-	const COM_Input_TempDataTypeDef comData =
-	{
-		.data[0] = sendVal,
-		.dataSize = 1,
-		.memAddress = DLPF_FS
-	};
-		
-	COM_Input_RegisterSetter(ITG3205, &comData);
-}
-
-/**
-  * @brief  		None
-  * @param[IN] 	None
-  * @param[OUT]	None
-  * @retval 		None
-  */
-void ITG3205_GetFullScaleAndLowPass(const COM_Input_HandleTypeDef * ITG3205, ITG3205_FullScaleAndLowPassReg * fullScaleAndLowPass)
-{
-	COM_Input_TempDataTypeDef comData =
-	{
-		.dataSize = 1,
-		.memAddress = DLPF_FS
-	};
 	
-	COM_Input_RegisterGetter(ITG3205, &comData);
-											
-	fullScaleAndLowPass->BYTE = comData.data[0];
+	COM_INPUT_I2C_DATA(ITG3205).data[0] = sendVal;
+	COM_INPUT_I2C_DATA(ITG3205).dataSize = 1;
+	COM_INPUT_I2C_DATA(ITG3205).memAddress = ITG3205_DLPF_FS;
+	COM_INPUT_I2C_DATA(ITG3205).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	
+	ComInput_RegisterSetter(ITG3205);
 }
 
-/**
+/**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   * @brief  		None
   * @param[IN] 	None
   * @param[OUT]	None
   * @retval 		None
-  */
-void ITG3205_SetInterruptConfig(const COM_Input_HandleTypeDef * ITG3205, const ITG3205_InterruptConfigReg * intConfig)
+  *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void ITG3205_GetFullScaleAndLowPass(ComInput_Handle * ITG3205, ITG3205_FullScaleAndLowPassReg * fullScaleAndLowPass)
+{
+	COM_INPUT_I2C_DATA(ITG3205).dataSize = 1;
+	COM_INPUT_I2C_DATA(ITG3205).memAddress = ITG3205_DLPF_FS;
+	COM_INPUT_I2C_DATA(ITG3205).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	
+	ComInput_RegisterGetter(ITG3205);
+											
+	fullScaleAndLowPass->BYTE = COM_INPUT_I2C_DATA(ITG3205).data[0];
+}
+
+/**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void ITG3205_SetInterruptConfig(ComInput_Handle * ITG3205, const ITG3205_InterruptConfigReg * intConfig)
 {
 	uint8_t sendVal = intConfig->BYTE;
 		
-	const COM_Input_TempDataTypeDef comData =
-	{
-		.data[0] = sendVal,
-		.dataSize = 1,
-		.memAddress = INT_CFG
-	};
-		
-	COM_Input_RegisterSetter(ITG3205, &comData);
+	COM_INPUT_I2C_DATA(ITG3205).data[0] = sendVal;
+	COM_INPUT_I2C_DATA(ITG3205).dataSize = 1;
+	COM_INPUT_I2C_DATA(ITG3205).memAddress = ITG3205_INT_CFG;
+	COM_INPUT_I2C_DATA(ITG3205).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	
+	ComInput_RegisterSetter(ITG3205);
 }
 
-/**
+/**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   * @brief  		None
   * @param[IN] 	None
   * @param[OUT]	None
   * @retval 		None
-  */
-void ITG3205_GetInterruptConfig(const COM_Input_HandleTypeDef * ITG3205, ITG3205_InterruptConfigReg * intConfig)
+  *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void ITG3205_GetInterruptConfig(ComInput_Handle * ITG3205, ITG3205_InterruptConfigReg * intConfig)
 {
-	COM_Input_TempDataTypeDef comData =
-	{
-		.dataSize = 1,
-		.memAddress = INT_CFG
-	};
+	COM_INPUT_I2C_DATA(ITG3205).dataSize = 1;
+	COM_INPUT_I2C_DATA(ITG3205).memAddress = ITG3205_INT_CFG;
+	COM_INPUT_I2C_DATA(ITG3205).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	COM_Input_RegisterGetter(ITG3205, &comData);
+	ComInput_RegisterGetter(ITG3205);
 											
-	intConfig->BYTE = comData.data[0];
+	intConfig->BYTE = COM_INPUT_I2C_DATA(ITG3205).data[0];
 }
 
-/**
+/**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   * @brief  		None
   * @param[IN] 	None
   * @param[OUT]	None
   * @retval 		None
-  */
-void ITG3205_GetInterruptStatus(const COM_Input_HandleTypeDef * ITG3205, ITG3205_IntStatusReg * intStatus)
+  *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void ITG3205_GetInterruptStatus(ComInput_Handle * ITG3205, ITG3205_IntStatusReg * intStatus)
 {
-	COM_Input_TempDataTypeDef comData =
-	{
-		.dataSize = 1,
-		.memAddress = INT_STATUS
-	};
+	COM_INPUT_I2C_DATA(ITG3205).dataSize = 1;
+	COM_INPUT_I2C_DATA(ITG3205).memAddress = ITG3205_INT_STATUS;
+	COM_INPUT_I2C_DATA(ITG3205).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	COM_Input_RegisterGetter(ITG3205, &comData);
+	ComInput_RegisterGetter(ITG3205);
 											
-	intStatus->BYTE = comData.data[0];
+	intStatus->BYTE = COM_INPUT_I2C_DATA(ITG3205).data[0];
 }
 
-/**
+/**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   * @brief  		None
   * @param[IN] 	None
   * @param[OUT]	None
   * @retval 		None
-  */
-void ITG3205_GetRawDatas(const COM_Input_HandleTypeDef * ITG3205, ITG3205_RawDatas * rawDatas)
+  *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void ITG3205_GetRawDatas(ComInput_Handle * ITG3205, ITG3205_RawDatas * rawDatas)
 {
-	COM_Input_TempDataTypeDef comData =
-	{
-		.dataSize = 8,
-		.memAddress = ITG3205_START_OF_DATA_REGS
-	};
+	COM_INPUT_I2C_DATA(ITG3205).dataSize = 8;
+	COM_INPUT_I2C_DATA(ITG3205).memAddress = ITG3205_START_OF_DATA_REGS;
+	COM_INPUT_I2C_DATA(ITG3205).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	COM_Input_RegisterGetter(ITG3205, &comData);
+	ComInput_RegisterGetter(ITG3205);
 							
-	uint16_t temperature = comData.data[0]<<8 | comData.data[1];
-	uint16_t xData = comData.data[2]<<8 | comData.data[3];
-	uint16_t yData = comData.data[4]<<8 | comData.data[5];
-	uint16_t zData = comData.data[6]<<8 | comData.data[7];
+	uint16_t temperature 	= COM_INPUT_I2C_DATA(ITG3205).data[0]<<8 | COM_INPUT_I2C_DATA(ITG3205).data[1];
+	uint16_t xData 				= COM_INPUT_I2C_DATA(ITG3205).data[2]<<8 | COM_INPUT_I2C_DATA(ITG3205).data[3];
+	uint16_t yData 				= COM_INPUT_I2C_DATA(ITG3205).data[4]<<8 | COM_INPUT_I2C_DATA(ITG3205).data[5];
+	uint16_t zData 				= COM_INPUT_I2C_DATA(ITG3205).data[6]<<8 | COM_INPUT_I2C_DATA(ITG3205).data[7];
 	
-	rawDatas->rawXData = DEGREE_TO_RADIAN(Get_HalfWord2sComplement(xData)*ITG3205_GYRO_DATA_SCALE_FACTOR) - ITG3205_ZERO_RATE_X_VALUE;
-	rawDatas->rawYData = DEGREE_TO_RADIAN(Get_HalfWord2sComplement(yData)*ITG3205_GYRO_DATA_SCALE_FACTOR) - ITG3205_ZERO_RATE_Y_VALUE;
-	rawDatas->rawZData = DEGREE_TO_RADIAN(Get_HalfWord2sComplement(zData)*ITG3205_GYRO_DATA_SCALE_FACTOR) - ITG3205_ZERO_RATE_Z_VALUE;
+	rawDatas->rawXData = Calc_GetHalfWord2sComplement(xData)*ITG3205_GYRO_DATA_SCALE_FACTOR;
+	rawDatas->rawYData = Calc_GetHalfWord2sComplement(yData)*ITG3205_GYRO_DATA_SCALE_FACTOR;
+	rawDatas->rawZData = Calc_GetHalfWord2sComplement(zData)*ITG3205_GYRO_DATA_SCALE_FACTOR;
 }
 
-/**
+/**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   * @brief  		None
   * @param[IN] 	None
   * @param[OUT]	None
   * @retval 		None
-  */
-void ITG3205_SetPowerManagement(const COM_Input_HandleTypeDef * ITG3205, const ITG3205_PowerManagementReg * powerManagement)
+  *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void ITG3205_SetPowerManagement(ComInput_Handle * ITG3205, const ITG3205_PowerManagementReg * powerManagement)
 {
 	uint8_t sendVal = powerManagement->BYTE;
 		
-	const COM_Input_TempDataTypeDef comData =
-	{
-		.data[0] = sendVal,
-		.dataSize = 1,
-		.memAddress = PWR_MGM
-	};
-		
-	COM_Input_RegisterSetter(ITG3205, &comData);
+	COM_INPUT_I2C_DATA(ITG3205).data[0] = sendVal;
+	COM_INPUT_I2C_DATA(ITG3205).dataSize = 1;
+	COM_INPUT_I2C_DATA(ITG3205).memAddress = ITG3205_PWR_MGM;
+	COM_INPUT_I2C_DATA(ITG3205).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	
+	ComInput_RegisterSetter(ITG3205);
 }
 
-/**
+/**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   * @brief  		None
   * @param[IN] 	None
   * @param[OUT]	None
   * @retval 		None
-  */
-void ITG3205_GetPowerManagement(const COM_Input_HandleTypeDef * ITG3205, ITG3205_PowerManagementReg * powerManagement)
+  *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void ITG3205_GetPowerManagement(ComInput_Handle * ITG3205, ITG3205_PowerManagementReg * powerManagement)
 {
-	COM_Input_TempDataTypeDef comData =
-	{
-		.dataSize = 1,
-		.memAddress = PWR_MGM
-	};
+	COM_INPUT_I2C_DATA(ITG3205).dataSize = 1;
+	COM_INPUT_I2C_DATA(ITG3205).memAddress = ITG3205_PWR_MGM;
+	COM_INPUT_I2C_DATA(ITG3205).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	COM_Input_RegisterGetter(ITG3205, &comData);
+	ComInput_RegisterGetter(ITG3205);
 											
-	powerManagement->BYTE = comData.data[0];
+	powerManagement->BYTE = COM_INPUT_I2C_DATA(ITG3205).data[0];
 }

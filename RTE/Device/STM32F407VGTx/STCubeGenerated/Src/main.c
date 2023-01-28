@@ -20,6 +20,7 @@
 #include "main.h"
 #include "dma.h"
 #include "i2c.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -30,10 +31,13 @@
 	#include "EventRecorder.h"            
 #endif  
   
+
 #include "cmsis_os2.h"
 #include "com_input.h"
 #include "adxl345.h"
 #include "itg3205.h"
+#include "hmc5883l.h"
+#include "imu.h"
 
 /* USER CODE END Includes */
 
@@ -54,16 +58,9 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-extern I2C_HandleTypeDef hi2c1;
-COM_Input_HandleTypeDef ADXL345 = {	.i2cHandle = &hi2c1,
-																		.i2cDevAddr = ADXL345_I2C_DEV_ADDR_GND,
-																		.comInputDevType = COM_DEVICE_TYPE_ADXL345 };
-
-COM_Input_HandleTypeDef ITG3205 = {	.i2cHandle = &hi2c1,
-																		.i2cDevAddr = ITG3205_I2C_DEV_ADDR_GND,
-																		.comInputDevType = COM_DEVICE_TYPE_ITG3205 };
-
-ITG3205_RawDatas rawDatas = {0};
+extern I2C_HandleTypeDef 		hi2c1;
+extern UART_HandleTypeDef 	huart2;
+																
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -127,6 +124,7 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_I2C1_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 #ifdef RTE_Compiler_EventRecorder
 	EventRecorderInitialize(EventRecordAll, 1);
@@ -201,31 +199,16 @@ void SystemClock_Config(void)
   */
 void app_main (void* arg)
 {
-	COM_Input_Init();
-	
-	COM_Input_AddDevice(&ADXL345);
-	COM_Input_AddDevice(&ITG3205);
 	
 	
-	ITG3205_FullScaleAndLowPassReg fullSelAndLowpass;
-	ITG3205_GetFullScaleAndLowPass(&ITG3205, &fullSelAndLowpass);
-	
-	uint8_t sampRate = ITG3205_GetSampleRateDivider(&ITG3205);
-	
-	ITG3205_InterruptConfigReg intConfig;
-	ITG3205_GetInterruptConfig(&ITG3205, &intConfig);
-	
-	ITG3205_PowerManagementReg powerManagement;
-	ITG3205_GetPowerManagement(&ITG3205, &powerManagement);
-	
-	
-	uint8_t me = ITG3205_WhoAmI(&ITG3205);
-	DataStatus readStatus = DATA_NOT_READY;
+	ComInput_Init();
+	GY85_Init();
 	
 	
 	while(true)
 	{
-		ITG3205_GetRawDatas(&ITG3205, &rawDatas);
+		
+		
 	}
 }
 /* USER CODE END 4 */

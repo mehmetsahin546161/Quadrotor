@@ -421,6 +421,11 @@
               <FileType>1</FileType>
               <FilePath>.\RTE\Device\STM32F407VGTx\STCubeGenerated\Src\dma.c</FilePath>
             </File>
+            <File>
+              <FileName>usart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\RTE\Device\STM32F407VGTx\STCubeGenerated\Src\usart.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -460,6 +465,11 @@
               <FileName>hmc5883l.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\Sensors\Src\hmc5883l.c</FilePath>
+            </File>
+            <File>
+              <FileName>imu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\Sensors\Src\imu.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -560,6 +570,12 @@
         </targetInfos>
       </component>
       <component Cclass="Device" Cgroup="STM32Cube HAL" Csub="RCC" Cvendor="Keil" Cversion="1.7.13" condition="STM32F4 HAL GPIO">
+        <package name="STM32F4xx_DFP" schemaVersion="1.7.2" url="http://www.keil.com/pack/" vendor="Keil" version="2.16.0"/>
+        <targetInfos>
+          <targetInfo name="Target 1"/>
+        </targetInfos>
+      </component>
+      <component Cclass="Device" Cgroup="STM32Cube HAL" Csub="UART" Cvendor="Keil" Cversion="1.7.13" condition="STM32F4 HAL DMA">
         <package name="STM32F4xx_DFP" schemaVersion="1.7.2" url="http://www.keil.com/pack/" vendor="Keil" version="2.16.0"/>
         <targetInfos>
           <targetInfo name="Target 1"/>
