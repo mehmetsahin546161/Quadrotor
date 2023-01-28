@@ -26,9 +26,13 @@ typedef struct
 /* Exported variables --------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
-void GY85_Init(void);
-void GY85_GetAngleFromAccelerometer(ADXL345_RawDatas * rawDatas, AxisAngles * axisAngles);
-void GY85_GetAngleFromGyro(ITG3205_RawDatas * rawDatas, AxisAngles * currAxisAngles, AxisAngles * prevAxisAngles, float periode);
+void IMU_Init(void);
+void IMU_GetAngleFromAccelerometer(ADXL345_RawDatas * rawDatas, AxisAngles * axisAngles);
+void IMU_GetAngleFromGyro(ITG3205_RawDatas * rawDatas, AxisAngles * currAxisAngles, AxisAngles * prevAxisAngles, float periode);
+
+void IMU_GetAccelOffsetValues(ComInput_Handle * ADXL345, ADXL345_RawDatas * biasDatas);
+//void IMU_GetGyroOffsetValues(ComInput_Handle * ADXL345, ADXL345_RawDatas * biasDatas);
+//void IMU_GetMagnetoOffsetValues(ComInput_Handle * ADXL345, ADXL345_RawDatas * biasDatas);
 
 
 #endif /* _IMU_H_ */

@@ -202,7 +202,7 @@ void app_main (void* arg)
 	
 	
 	ComInput_Init();
-	GY85_Init();
+	IMU_Init();
 	
 	
 	while(true)

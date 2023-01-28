@@ -2,23 +2,27 @@
 #include "imu.h"
 #include <math.h>
 #include "calc.h"
-#include "stdio.h"
+#include <stdio.h>
+#include <string.h>
 
 /* Private define ------------------------------------------------------------*/
-#define GYRO_BIAS_CALC_ITERATION		25
+#define ACCEL_BIAS_CALC_ITERATION			10
+#define GYRO_BIAS_CALC_ITERATION			10
+#define MAGNETO_BIAS_CALC_ITERATION		10
 
+#define GRAVITY_ACCELERATION					1			/* g */
 
-#define GY85_PERIODIC_READ_FLAG				(1<<0)
+#define IMU_PERIODIC_READ_FLAG				(1<<0)
 
 /* Private macro -------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-static osThreadId_t	TID_GY85;
+static osThreadId_t	TID_IMU;
 static osTimerId_t 	TIM_GetDatas;
 
-const osThreadAttr_t GY85ThreadAttr =
+const osThreadAttr_t IMUThreadAttr =
 {
-	.name = "GY85_Thread",
+	.name = "IMU_Thread",
 	.priority = osPriorityNormal
 };
 
@@ -33,7 +37,10 @@ static ADXL345_RawDatas 	accelRawDatas;
 static ITG3205_RawDatas 	gyroRawDatas;
 static HMC5883L_RawDatas	magnetoRawDatas;	
 
+static ADXL345_RawDatas 	accelBiasDatas;
 static ITG3205_RawDatas 	gyroBiasDatas;
+static HMC5883L_RawDatas	magnetoBiasDatas;
+
 
 
 static AxisAngles accelAngles;
@@ -48,8 +55,8 @@ extern UART_HandleTypeDef 	huart2;
 
 
 /* Private function prototypes -----------------------------------------------*/
-static void GY85_SensorHandler (void *arg);				
-static void GY85_GetDatasCallback (void *arg);
+static void IMU_SensorHandler (void *arg);				
+static void IMU_GetDatasCallback (void *arg);
 
 /* Private functions ---------------------------------------------------------*/
 																			
@@ -59,23 +66,31 @@ static void GY85_GetDatasCallback (void *arg);
 	*	@param[OUT]		
   * @retval 		
   *------------------------------------------------------------------------------*/
-static void GY85_SensorHandler (void *arg)
+static void IMU_SensorHandler (void *arg)
 {
 	while(true)
 	{
-		osThreadFlagsWait(GY85_PERIODIC_READ_FLAG, osFlagsWaitAll, osWaitForever);
+		osThreadFlagsWait(IMU_PERIODIC_READ_FLAG, osFlagsWaitAll, osWaitForever);
 	
 		ADXL345_GetRawDatas(&(comInputs[COM_INPUT_TYPE_I2C][ADXL345_I2C_CHANNEL_NO]), 	&accelRawDatas);
 		//ITG3205_GetRawDatas(&(comInputs[COM_INPUT_TYPE_I2C][ITG3205_I2C_CHANNEL_NO]), 	&gyroRawDatas);
 		//HMC5883L_GetRawDatas(&(comInputs[COM_INPUT_TYPE_I2C][HMC5883L_I2C_CHANNEL_NO]), &magnetoRawDatas);
 		
 		/* Remove offset datas */
+		accelRawDatas.rawXData -= accelBiasDatas.rawXData;
+		accelRawDatas.rawYData -= accelBiasDatas.rawYData;
+		accelRawDatas.rawZData -= accelBiasDatas.rawZData;
+		
 		//gyroRawDatas.rawXData -= gyroBiasDatas.rawXData;
 		//gyroRawDatas.rawYData -= gyroBiasDatas.rawYData;
 		//gyroRawDatas.rawZData -= gyroBiasDatas.rawZData;
 		
-		GY85_GetAngleFromAccelerometer(&accelRawDatas, &accelAngles);
-		//GY85_GetAngleFromGyro(&gyroRawDatas, &gyroAngles, &gyroPrevAngles, Ts_PERIOD);
+		//magnetoRawDatas.rawXData -= magnetoBiasDatas.rawXData;
+		//magnetoRawDatas.rawYData -= magnetoBiasDatas.rawYData;
+		//magnetoRawDatas.rawZData -= magnetoBiasDatas.rawZData;
+		
+		IMU_GetAngleFromAccelerometer(&accelRawDatas, &accelAngles);
+		//IMU_GetAngleFromGyro(&gyroRawDatas, &gyroAngles, &gyroPrevAngles, Ts_PERIOD);
 		
 		accelAngles.xAngle = RADIAN_TO_DEGREE(accelAngles.xAngle);
 		accelAngles.yAngle = RADIAN_TO_DEGREE(accelAngles.yAngle);
@@ -99,9 +114,9 @@ static void GY85_SensorHandler (void *arg)
 	*	@param[OUT]		
   * @retval 		
   *------------------------------------------------------------------------------*/
-static void GY85_GetDatasCallback (void *arg)
+static void IMU_GetDatasCallback (void *arg)
 {
-	osThreadFlagsSet(TID_GY85, GY85_PERIODIC_READ_FLAG);
+	osThreadFlagsSet(TID_IMU, IMU_PERIODIC_READ_FLAG);
 }
 
 /* Exported functions --------------------------------------------------------*/
@@ -112,7 +127,7 @@ static void GY85_GetDatasCallback (void *arg)
 	*	@param[OUT]		
   * @retval 		
   *------------------------------------------------------------------------------*/
-void GY85_Init(void)
+void IMU_Init(void)
 {
 	
 	ComInput_Handle tempSensor;
@@ -139,30 +154,19 @@ void GY85_Init(void)
 	//HMC5883L_InitSensor(&HMC5883L);
 	
 	/* Offset values read at first run */
-	//ITG3205_RawDatas 	gyroTempBiasDatas;
-	//
-	//for(uint8_t i=0; i<GYRO_BIAS_CALC_ITERATION; i++)
-	//{
-	//	
-	//	ITG3205_GetRawDatas(&ITG3205, 	&gyroTempBiasDatas);
-	//	
-	//	gyroBiasDatas.rawXData += gyroTempBiasDatas.rawXData;
-	//	gyroBiasDatas.rawYData += gyroTempBiasDatas.rawYData;
-	//	gyroBiasDatas.rawZData += gyroTempBiasDatas.rawZData;
-	//}
-	//
-	//gyroBiasDatas.rawXData /=  (float)GYRO_BIAS_CALC_ITERATION;
-	//gyroBiasDatas.rawYData /=  (float)GYRO_BIAS_CALC_ITERATION;
-	//gyroBiasDatas.rawZData /=  (float)GYRO_BIAS_CALC_ITERATION;
+	IMU_GetAccelOffsetValues(&(comInputs[COM_INPUT_TYPE_I2C][ADXL345_I2C_CHANNEL_NO]), &accelBiasDatas);
 	
-	TID_GY85 = osThreadNew(GY85_SensorHandler, NULL, &GY85ThreadAttr);
 	
-	if(TID_GY85 == NULL)
+	
+	
+	TID_IMU = osThreadNew(IMU_SensorHandler, NULL, &IMUThreadAttr);
+	
+	if(TID_IMU == NULL)
 	{
 		//Thread couldn't be created.
 	}
 	
-	TIM_GetDatas = osTimerNew(GY85_GetDatasCallback, osTimerPeriodic, NULL, &GetDatasTimerAttr);
+	TIM_GetDatas = osTimerNew(IMU_GetDatasCallback, osTimerPeriodic, NULL, &GetDatasTimerAttr);
 	
 	if(TIM_GetDatas == NULL)
 	{
@@ -180,7 +184,7 @@ void GY85_Init(void)
 	*	@param[OUT]		axisAngles
   * @retval 		
   *------------------------------------------------------------------------------*/
-void GY85_GetAngleFromAccelerometer(ADXL345_RawDatas * rawDatas, AxisAngles * axisAngles)
+void IMU_GetAngleFromAccelerometer(ADXL345_RawDatas * rawDatas, AxisAngles * axisAngles)
 {
 	axisAngles->xAngle = (atan(rawDatas->rawYData / sqrt(pow(rawDatas->rawXData, 2) + pow(rawDatas->rawZData, 2))) * 180 / PI);
 	axisAngles->yAngle = (atan(-1 * rawDatas->rawXData / sqrt(pow(rawDatas->rawYData, 2) + pow(rawDatas->rawZData, 2))) * 180 / PI);
@@ -194,9 +198,39 @@ void GY85_GetAngleFromAccelerometer(ADXL345_RawDatas * rawDatas, AxisAngles * ax
 	*	@param[OUT]		
   * @retval 		
   *------------------------------------------------------------------------------*/
-void GY85_GetAngleFromGyro(ITG3205_RawDatas * rawDatas, AxisAngles * currAxisAngles, AxisAngles * prevAxisAngles, float periode)
+void IMU_GetAngleFromGyro(ITG3205_RawDatas * rawDatas, AxisAngles * currAxisAngles, AxisAngles * prevAxisAngles, float periode)
 {
 	currAxisAngles->xAngle = DEGREE_TO_RADIAN( Calc_GetDiscreteIntegral( &(rawDatas->rawXData), &(prevAxisAngles->xAngle), periode) );
 	currAxisAngles->yAngle = DEGREE_TO_RADIAN( Calc_GetDiscreteIntegral( &(rawDatas->rawYData), &(prevAxisAngles->yAngle), periode) );
 	currAxisAngles->zAngle = DEGREE_TO_RADIAN( Calc_GetDiscreteIntegral( &(rawDatas->rawZData), &(prevAxisAngles->zAngle), periode) );
+}
+
+/**------------------------------------------------------------------------------
+  * @brief  			
+	* @note					
+	*	@param[IN]  	
+	*	@param[OUT]		
+  * @retval 		
+  *------------------------------------------------------------------------------*/
+void IMU_GetAccelOffsetValues(ComInput_Handle * ADXL345, ADXL345_RawDatas * biasDatas)
+{
+	memset(biasDatas, 0x00, sizeof(ADXL345_RawDatas));
+	ADXL345_RawDatas tempDatas;
+	
+	for(uint8_t i=0; i<ACCEL_BIAS_CALC_ITERATION; i++)
+	{
+		
+		ADXL345_GetRawDatas(ADXL345, &tempDatas);
+		
+		biasDatas->rawXData += tempDatas.rawXData;
+		biasDatas->rawYData += tempDatas.rawYData;
+		biasDatas->rawZData += tempDatas.rawZData;
+	}
+	
+	biasDatas->rawXData /=  (float)GYRO_BIAS_CALC_ITERATION;
+	biasDatas->rawYData /=  (float)GYRO_BIAS_CALC_ITERATION;
+	biasDatas->rawZData /=  (float)GYRO_BIAS_CALC_ITERATION;
+	
+	biasDatas->rawZData -= GRAVITY_ACCELERATION;
+	
 }

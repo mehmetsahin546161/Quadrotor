@@ -39,4 +39,5 @@
   Source\Sensors\Inc\itg3205.h Source\Sensors\Inc\hmc5883l.h \
   C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\math.h Source\Common\Inc\calc.h \
   C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\inttypes.h \
-  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdio.h
+  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdio.h \
+  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\string.h
