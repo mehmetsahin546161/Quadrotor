@@ -159,9 +159,9 @@ typedef union
 
 typedef struct
 {
-	float rawXData;
-	float rawYData;
-	float rawZData;
+	double rawXData;
+	double rawYData;
+	double rawZData;
 
 }HMC5883L_RawDatas;
 

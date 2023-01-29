@@ -27,8 +27,6 @@ void ITG3205_InitSensor(ComInput_Handle * ITG3205)
 	};
 	
 	ITG3205_SetFullScaleAndLowPass(ITG3205, &fullScaleAndLowPassReg);
-	//ITG3205_SetSampleRateDivider(ITG3205, 7);
-
 }
 
 /**------------------------------------------------------------------------------------------------------------------------------------------------------------------------

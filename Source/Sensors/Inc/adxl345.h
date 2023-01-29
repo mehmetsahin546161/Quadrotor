@@ -246,9 +246,9 @@ typedef union
 
 typedef struct
 {
-	float rawXData;
-	float rawYData;
-	float rawZData;
+	double rawXData;
+	double rawYData;
+	double rawZData;
 
 }ADXL345_RawDatas;
 

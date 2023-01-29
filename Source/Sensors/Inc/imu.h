@@ -17,9 +17,9 @@
 /* Exported types ------------------------------------------------------------*/
 typedef struct
 {
-	float xAngle;
-	float yAngle;
-	float zAngle;
+	double xAngle;
+	double yAngle;
+	double zAngle;
 
 }AxisAngles;
 
@@ -31,8 +31,8 @@ void IMU_GetAngleFromAccelerometer(ADXL345_RawDatas * rawDatas, AxisAngles * axi
 void IMU_GetAngleFromGyro(ITG3205_RawDatas * rawDatas, AxisAngles * currAxisAngles, AxisAngles * prevAxisAngles, float periode);
 
 void IMU_GetAccelOffsetValues(ComInput_Handle * ADXL345, ADXL345_RawDatas * biasDatas);
-//void IMU_GetGyroOffsetValues(ComInput_Handle * ADXL345, ADXL345_RawDatas * biasDatas);
-//void IMU_GetMagnetoOffsetValues(ComInput_Handle * ADXL345, ADXL345_RawDatas * biasDatas);
+void IMU_GetGyroOffsetValues(ComInput_Handle * ITG3205, ITG3205_RawDatas * biasDatas);
+void IMU_GetMagnetoOffsetValues(ComInput_Handle * HMC5883L, HMC5883L_RawDatas * biasDatas);
 
 
 #endif /* _IMU_H_ */

@@ -202,10 +202,10 @@ typedef union
 
 typedef struct
 {
-	float rawTemp;
-	float rawXData;
-	float rawYData;
-	float rawZData;
+	double rawTemp;
+	double rawXData;
+	double rawYData;
+	double rawZData;
 
 }ITG3205_RawDatas;
 

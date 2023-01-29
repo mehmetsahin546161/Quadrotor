@@ -12,7 +12,7 @@
   *------------------------------------------------------------------------------*/
 int8_t Calc_GetByte2sComplement(uint8_t data)
 {
-	double retVal = (data & SIGN_BIT_MASK_IN_BYTE ) ?
+	int8_t retVal = (data & SIGN_BIT_MASK_IN_BYTE ) ?
 									-1.0*( (uint8_t)( ~(data-1) )):			// Negative number
 									data;																// Positive number
 
@@ -27,7 +27,7 @@ int8_t Calc_GetByte2sComplement(uint8_t data)
   *------------------------------------------------------------------------------*/
 int16_t Calc_GetHalfWord2sComplement(uint16_t data)
 {
-	double retVal = (data & SIGN_BIT_MASK_IN_HALFWORD) ?
+	int16_t retVal = (data & SIGN_BIT_MASK_IN_HALFWORD) ?
 									-1.0*( (uint16_t)( ~(data-1) )):			// Negative number
 									data;																	// Positive number
 
@@ -42,7 +42,7 @@ int16_t Calc_GetHalfWord2sComplement(uint16_t data)
   *------------------------------------------------------------------------------*/
 int32_t Calc_GetWord2sComplement(uint32_t data)
 {
-	double retVal = (data & SIGN_BIT_MASK_IN_WORD) ?
+	int32_t retVal = (data & SIGN_BIT_MASK_IN_WORD) ?
 									-1.0*( (uint32_t)( ~(data-1) )):			// Negative number
 									data;																// Positive number
 
@@ -55,7 +55,7 @@ int32_t Calc_GetWord2sComplement(uint32_t data)
 	*	@param[OUT]		
   * @retval 		
   *------------------------------------------------------------------------------*/
-double Calc_GetDiscreteDerivative(float * currVal, float * prevVal, float samplingTime)
+double Calc_GetDiscreteDerivative(double * currVal, double * prevVal, double samplingTime)
 {
 	//              ----------------
 	//							|						   |
@@ -78,7 +78,7 @@ double Calc_GetDiscreteDerivative(float * currVal, float * prevVal, float sampli
 	*	@param[OUT]		
   * @retval 		
   *------------------------------------------------------------------------------*/
-double Calc_GetDiscreteIntegral(float * currVal, float * prevSum, float samplingTime)
+double Calc_GetDiscreteIntegral(double * currVal, double * prevSum, double samplingTime)
 {
 	//              --------------
 	//							|					   |
