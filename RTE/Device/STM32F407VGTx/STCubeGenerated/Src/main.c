@@ -33,7 +33,7 @@
   
 
 #include "cmsis_os2.h"
-#include "com_input.h"
+#include "com_interface.h"
 #include "adxl345.h"
 #include "itg3205.h"
 #include "hmc5883l.h"
@@ -199,16 +199,11 @@ void SystemClock_Config(void)
   */
 void app_main (void* arg)
 {
-	
-	
-	ComInput_Init();
+	COM_Init();
 	IMU_Init();
-	
 	
 	while(true)
 	{
-		
-		
 	}
 }
 /* USER CODE END 4 */

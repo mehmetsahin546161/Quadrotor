@@ -1,6 +1,7 @@
-./objects/hmc5883l.o: Source\Sensors\Src\hmc5883l.c \
-  RTE\_Target_1\Pre_Include_Global.h Source\Sensors\Inc\hmc5883l.h \
+./objects/mpu6050.o: Source\Sensors\Src\mpu6050.c \
+  RTE\_Target_1\Pre_Include_Global.h Source\Sensors\Inc\mpu6050.h \
   C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdint.h \
+  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdbool.h \
   Source\UC_Interface\Inc\com_interface.h \
   RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\main.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal.h \
@@ -32,7 +33,4 @@
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_pwr.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_pwr_ex.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_uart.h \
-  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdbool.h \
-  C:\Users\3060\AppData\Local\Arm\Packs\ARM\CMSIS\5.9.0\CMSIS\RTOS2\Include\cmsis_os2.h \
-  Source\Common\Inc\calc.h \
-  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\inttypes.h
+  C:\Users\3060\AppData\Local\Arm\Packs\ARM\CMSIS\5.9.0\CMSIS\RTOS2\Include\cmsis_os2.h

@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>.\Source\Common\Inc;.\Source\Inputs\Inc;.\Source\Sensors\Inc</IncludePath>
+              <IncludePath>.\Source\Common\Inc;.\Source\Sensors\Inc;.\Source\UC_Interface\Inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -429,22 +429,22 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>Inputs</GroupName>
+          <GroupName>UC_Interface</GroupName>
           <Files>
             <File>
-              <FileName>digital_input.c</FileName>
+              <FileName>digital_interface.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Source\Inputs\Src\digital_input.c</FilePath>
+              <FilePath>.\Source\UC_Interface\Src\digital_interface.c</FilePath>
             </File>
             <File>
-              <FileName>analog_input.c</FileName>
+              <FileName>analog_interface.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Source\Inputs\Src\analog_input.c</FilePath>
+              <FilePath>.\Source\UC_Interface\Src\analog_interface.c</FilePath>
             </File>
             <File>
-              <FileName>com_input.c</FileName>
+              <FileName>com_interface.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Source\Inputs\Src\com_input.c</FilePath>
+              <FilePath>.\Source\UC_Interface\Src\com_interface.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -465,6 +465,11 @@
               <FileName>hmc5883l.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\Sensors\Src\hmc5883l.c</FilePath>
+            </File>
+            <File>
+              <FileName>mpu6050.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\Sensors\Src\mpu6050.c</FilePath>
             </File>
             <File>
               <FileName>imu.c</FileName>

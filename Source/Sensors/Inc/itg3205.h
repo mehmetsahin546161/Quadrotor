@@ -7,7 +7,7 @@
 #include "stm32f4xx_hal_i2c.h"
 #include <stdbool.h>
 #include "defines.h"
-#include "com_input.h"
+#include "com_interface.h"
 
 /* Exported constants --------------------------------------------------------*/
 
@@ -227,24 +227,24 @@ typedef union
 }ITG3205_PowerManagementReg;
 
 /* Exported functions --------------------------------------------------------*/
-void ITG3205_InitSensor(ComInput_Handle * ITG3205);
+void ITG3205_InitSensor(COM_Handle * ITG3205);
 
-uint8_t ITG3205_WhoAmI(ComInput_Handle * ITG3205);
+uint8_t ITG3205_WhoAmI(COM_Handle * ITG3205);
 
-void ITG3205_SetSampleRateDivider(ComInput_Handle * ITG3205, uint8_t sampleRateDiv);
-uint8_t ITG3205_GetSampleRateDivider(ComInput_Handle * ITG3205);
+void ITG3205_SetSampleRateDivider(COM_Handle * ITG3205, uint8_t sampleRateDiv);
+uint8_t ITG3205_GetSampleRateDivider(COM_Handle * ITG3205);
 
-void ITG3205_SetFullScaleAndLowPass(ComInput_Handle * ITG3205, const ITG3205_FullScaleAndLowPassReg * fullScaleAndLowPass);
-void ITG3205_GetFullScaleAndLowPass(ComInput_Handle * ITG3205, ITG3205_FullScaleAndLowPassReg * fullScaleAndLowPass);
+void ITG3205_SetFullScaleAndLowPass(COM_Handle * ITG3205, const ITG3205_FullScaleAndLowPassReg * fullScaleAndLowPass);
+void ITG3205_GetFullScaleAndLowPass(COM_Handle * ITG3205, ITG3205_FullScaleAndLowPassReg * fullScaleAndLowPass);
 
-void ITG3205_SetInterruptConfig(ComInput_Handle * ITG3205, const ITG3205_InterruptConfigReg * intConfig);
-void ITG3205_GetInterruptConfig(ComInput_Handle * ITG3205, ITG3205_InterruptConfigReg * intConfig);
+void ITG3205_SetInterruptConfig(COM_Handle * ITG3205, const ITG3205_InterruptConfigReg * intConfig);
+void ITG3205_GetInterruptConfig(COM_Handle * ITG3205, ITG3205_InterruptConfigReg * intConfig);
 
-void ITG3205_GetInterruptStatus(ComInput_Handle * ITG3205, ITG3205_IntStatusReg * intStatus);
+void ITG3205_GetInterruptStatus(COM_Handle * ITG3205, ITG3205_IntStatusReg * intStatus);
 
-void ITG3205_GetRawDatas(ComInput_Handle * ITG3205, ITG3205_RawDatas * rawDatas);
+void ITG3205_GetRawDatas(COM_Handle * ITG3205, ITG3205_RawDatas * rawDatas);
 
-void ITG3205_SetPowerManagement(ComInput_Handle * ITG3205, const ITG3205_PowerManagementReg * powerManagement);
-void ITG3205_GetPowerManagement(ComInput_Handle * ITG3205, ITG3205_PowerManagementReg * powerManagement);
+void ITG3205_SetPowerManagement(COM_Handle * ITG3205, const ITG3205_PowerManagementReg * powerManagement);
+void ITG3205_GetPowerManagement(COM_Handle * ITG3205, ITG3205_PowerManagementReg * powerManagement);
 
 #endif //ITG3205_H

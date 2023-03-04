@@ -1,6 +1,6 @@
 #include 	"adxl345.h"
 #include 	"cmsis_os2.h"
-#include 	"com_input.h"
+#include 	"com_interface.h"
 #include	"defines.h"
 #include   "calc.h"
 
@@ -23,11 +23,8 @@
   * @param[OUT]	None
   * @retval 		None
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-void ADXL345_InitSensor(ComInput_Handle * ADXL345)
+void ADXL345_InitSensor(COM_Handle * ADXL345)
 {
-	/* Register sensor */
-	ComInput_AddInputDevice(ADXL345);
-	
 	const ADXL345_DataFormatReg setDataFormat = 
 	{ 
 		.BIT.range = ADXL345_16G_RANGE,
@@ -36,7 +33,6 @@ void ADXL345_InitSensor(ComInput_Handle * ADXL345)
 		.BIT.intInvert = ADXL345_INTERRUPT_ACTIVE_HIGH
 	};
 	ADXL345_SetDataFormat(ADXL345, &setDataFormat);
-	
 	
 	const ADXL345_PowerCtrReg setPowerControl = 
 	{
@@ -51,15 +47,15 @@ void ADXL345_InitSensor(ComInput_Handle * ADXL345)
   * @param[IN]  ADXL345 Sensor handler
   * @retval 		None
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-uint8_t ADXL345_WhoAmI(ComInput_Handle * ADXL345)
+uint8_t ADXL345_WhoAmI(COM_Handle * ADXL345)
 {
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_DEVID;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DEVID;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterGetter(ADXL345);
+	COM_RegisterGetter(ADXL345);
 											
-	return COM_INPUT_I2C_DATA(ADXL345).data[0];
+	return COM_I2C_DATA(ADXL345).data[0];
 }
 
 /**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -70,18 +66,18 @@ uint8_t ADXL345_WhoAmI(ComInput_Handle * ADXL345)
   * @param[IN]  dTapThresh	Minimum acceleration value represented in mg unit to create tap interrupt.
   * @retval 		None
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-void ADXL345_SetTapThreshold(ComInput_Handle * ADXL345, double tapThresh)
+void ADXL345_SetTapThreshold(COM_Handle * ADXL345, double tapThresh)
 {
 	if( (tapThresh>=0) && (tapThresh<=16000) )
 	{
 		uint8_t sendVal = (1.0/TAP_THRESH_SCALE_FACTOR)*tapThresh;
 		
-		COM_INPUT_I2C_DATA(ADXL345).data[0] = sendVal;
-		COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-		COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_TAP;
-		COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+		COM_I2C_DATA(ADXL345).data[0] = sendVal;
+		COM_I2C_DATA(ADXL345).dataSize = 1;
+		COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_TAP;
+		COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 		
-		ComInput_RegisterSetter(ADXL345);
+		COM_RegisterSetter(ADXL345);
 	}
 }
 
@@ -92,15 +88,15 @@ void ADXL345_SetTapThreshold(ComInput_Handle * ADXL345, double tapThresh)
 	*	@param[IN]  ADXL345 Sensor handler.
   * @retval 		Minimum acceleration value represented in mg unit to create tap interrupt.
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-double ADXL345_GetTapThreshold(ComInput_Handle * ADXL345)
+double ADXL345_GetTapThreshold(COM_Handle * ADXL345)
 {
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_TAP;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_TAP;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterGetter(ADXL345);
+	COM_RegisterGetter(ADXL345);
 											
-	return (COM_INPUT_I2C_DATA(ADXL345).data[0])*TAP_THRESH_SCALE_FACTOR;
+	return (COM_I2C_DATA(ADXL345).data[0])*TAP_THRESH_SCALE_FACTOR;
 }
 
 /**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -111,7 +107,7 @@ double ADXL345_GetTapThreshold(ComInput_Handle * ADXL345)
   * @param[IN]  dOffset		Offset value represented in mg unit.
   * @retval 		None
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-void ADXL345_SetOffset(ComInput_Handle * ADXL345, ADXL345_Axis axis, double offset)
+void ADXL345_SetOffset(COM_Handle * ADXL345, ADXL345_Axis axis, double offset)
 {
 	if( (offset<=2000) && (offset>=-2000) )
 	{
@@ -125,12 +121,12 @@ void ADXL345_SetOffset(ComInput_Handle * ADXL345, ADXL345_Axis axis, double offs
 		
 		if(memAddress != INVALID_DATA)
 		{
-			COM_INPUT_I2C_DATA(ADXL345).data[0] = sendVal;
-			COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-			COM_INPUT_I2C_DATA(ADXL345).memAddress = memAddress;
-			COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+			COM_I2C_DATA(ADXL345).data[0] = sendVal;
+			COM_I2C_DATA(ADXL345).dataSize = 1;
+			COM_I2C_DATA(ADXL345).memAddress = memAddress;
+			COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 			
-			ComInput_RegisterSetter(ADXL345);
+			COM_RegisterSetter(ADXL345);
 		}
 	}
 }
@@ -142,7 +138,7 @@ void ADXL345_SetOffset(ComInput_Handle * ADXL345, ADXL345_Axis axis, double offs
   * @param[IN]  eAxis 		The axes whose offset is queued
   * @retval 		Offset value represented in mg unit.
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-double ADXL345_GetOffset(ComInput_Handle * ADXL345, ADXL345_Axis axis)
+double ADXL345_GetOffset(COM_Handle * ADXL345, ADXL345_Axis axis)
 {
 	uint8_t memAddress = 	(axis==ADXL345_X_AXIS) ? ADXL345_OFSX :
 												(axis==ADXL345_Y_AXIS) ? ADXL345_OFSY :
@@ -150,16 +146,16 @@ double ADXL345_GetOffset(ComInput_Handle * ADXL345, ADXL345_Axis axis)
 		
 	if(memAddress != INVALID_DATA)
 	{
-		COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-		COM_INPUT_I2C_DATA(ADXL345).memAddress = memAddress;
-		COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+		COM_I2C_DATA(ADXL345).dataSize = 1;
+		COM_I2C_DATA(ADXL345).memAddress = memAddress;
+		COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 		
-		ComInput_RegisterGetter(ADXL345);
+		COM_RegisterGetter(ADXL345);
 																				
 		/* Check MSB bit to find the sign of the value. */
-		double offsetVal = 	((COM_INPUT_I2C_DATA(ADXL345).data[0]) & (1<<ADXL345_REG_MSB_BIT)) ?
-													(-1.0*( (uint8_t)( ~(COM_INPUT_I2C_DATA(ADXL345).data[0]-1) )*OFFSET_SCALE_FACTOR))	:			// Negative number
-													(COM_INPUT_I2C_DATA(ADXL345).data[0]*OFFSET_SCALE_FACTOR);																// Positive number
+		double offsetVal = 	((COM_I2C_DATA(ADXL345).data[0]) & (1<<ADXL345_REG_MSB_BIT)) ?
+													(-1.0*( (uint8_t)( ~(COM_I2C_DATA(ADXL345).data[0]-1) )*OFFSET_SCALE_FACTOR))	:			// Negative number
+													(COM_I2C_DATA(ADXL345).data[0]*OFFSET_SCALE_FACTOR);																// Positive number
 		
 		
 		
@@ -177,16 +173,16 @@ double ADXL345_GetOffset(ComInput_Handle * ADXL345, ADXL345_Axis axis)
   * @param[IN]  u4MaxTapDur Maximum tap duration represented in microsecond unit.
   * @retval 		None
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-void ADXL345_SetMaxTapDuration(ComInput_Handle * ADXL345, uint32_t maxTapDur)
+void ADXL345_SetMaxTapDuration(COM_Handle * ADXL345, uint32_t maxTapDur)
 {
 	uint8_t	sendVal = maxTapDur/DUR_TIME_SCALE_FACTOR;
 	
-	COM_INPUT_I2C_DATA(ADXL345).data[0] = sendVal;
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_DUR;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).data[0] = sendVal;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DUR;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterSetter(ADXL345);
+	COM_RegisterSetter(ADXL345);
 }
 
 /**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -196,15 +192,15 @@ void ADXL345_SetMaxTapDuration(ComInput_Handle * ADXL345, uint32_t maxTapDur)
 	*	@param[IN]  ADXL345 	Sensor handler.
   * @retval 		Maximum tap duration represented in microsecond unit.
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-uint32_t ADXL345_GetMaxTapDuration(ComInput_Handle * ADXL345)
+uint32_t ADXL345_GetMaxTapDuration(COM_Handle * ADXL345)
 {
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_DUR;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DUR;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterGetter(ADXL345);
+	COM_RegisterGetter(ADXL345);
 											
-	return (COM_INPUT_I2C_DATA(ADXL345).data[0])*DUR_TIME_SCALE_FACTOR;
+	return (COM_I2C_DATA(ADXL345).data[0])*DUR_TIME_SCALE_FACTOR;
 }
 
 /**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -216,16 +212,16 @@ uint32_t ADXL345_GetMaxTapDuration(ComInput_Handle * ADXL345)
   * @param[IN]  dLatTime	Latency time represented in milisecond unit
   * @retval 		None
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-void ADXL345_SetLatencyTime(ComInput_Handle * ADXL345, double latTime)
+void ADXL345_SetLatencyTime(COM_Handle * ADXL345, double latTime)
 {
 	uint8_t	sendVal = latTime/LATENT_TIME_SCALE_FACTOR;
 	
-	COM_INPUT_I2C_DATA(ADXL345).data[0] = sendVal;
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_LATENT;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).data[0] = sendVal;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_LATENT;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterSetter(ADXL345);
+	COM_RegisterSetter(ADXL345);
 }
 
 /**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -236,15 +232,15 @@ void ADXL345_SetLatencyTime(ComInput_Handle * ADXL345, double latTime)
 	*	@param[IN]  ADXL345 Sensor handler.
   * @retval 		Latency time represented in milisecond unit
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-double ADXL345_GetLatencyTime(ComInput_Handle * ADXL345)
+double ADXL345_GetLatencyTime(COM_Handle * ADXL345)
 {
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_LATENT;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_LATENT;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterGetter(ADXL345);																		
+	COM_RegisterGetter(ADXL345);																		
 																				
-	return (COM_INPUT_I2C_DATA(ADXL345).data[0])*LATENT_TIME_SCALE_FACTOR;
+	return (COM_I2C_DATA(ADXL345).data[0])*LATENT_TIME_SCALE_FACTOR;
 }
 
 /**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -256,16 +252,16 @@ double ADXL345_GetLatencyTime(ComInput_Handle * ADXL345)
   * @param[IN]  dWinTime	Window time represented in milisecond unit
   * @retval 		None
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-void ADXL345_SetWindowTime(ComInput_Handle * ADXL345, double winTime)
+void ADXL345_SetWindowTime(COM_Handle * ADXL345, double winTime)
 {
 	uint8_t	sendVal = winTime/WINDOW_TIME_SCALE_FACTOR;
 	
-	COM_INPUT_I2C_DATA(ADXL345).data[0] = sendVal;
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_WINDOW;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).data[0] = sendVal;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_WINDOW;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterSetter(ADXL345);
+	COM_RegisterSetter(ADXL345);
 }
 
 /**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -276,15 +272,15 @@ void ADXL345_SetWindowTime(ComInput_Handle * ADXL345, double winTime)
 	*	@param[IN]  ADXL345 Sensor handler.
   * @retval 		Window time represented in milisecond unit
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-double ADXL345_GetWindowTime(ComInput_Handle * ADXL345)
+double ADXL345_GetWindowTime(COM_Handle * ADXL345)
 {
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_WINDOW;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_WINDOW;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterGetter(ADXL345);
+	COM_RegisterGetter(ADXL345);
 										
-	return (COM_INPUT_I2C_DATA(ADXL345).data[0])*WINDOW_TIME_SCALE_FACTOR;
+	return (COM_I2C_DATA(ADXL345).data[0])*WINDOW_TIME_SCALE_FACTOR;
 }
 
 /**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -295,16 +291,16 @@ double ADXL345_GetWindowTime(ComInput_Handle * ADXL345)
   * @param[IN]  dActThresh	Minimum threshold value for detecting activity.
   * @retval 		None
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-void ADXL345_SetActivityThreshold(ComInput_Handle * ADXL345, double actThresh)
+void ADXL345_SetActivityThreshold(COM_Handle * ADXL345, double actThresh)
 {
 	uint8_t	sendVal = actThresh/ACTIVITY_THRESH_SCALE_FACTOR;
 	
-	COM_INPUT_I2C_DATA(ADXL345).data[0] = sendVal;
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_ACT;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).data[0] = sendVal;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_ACT;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterSetter(ADXL345);
+	COM_RegisterSetter(ADXL345);
 }
 
 /**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -314,15 +310,15 @@ void ADXL345_SetActivityThreshold(ComInput_Handle * ADXL345, double actThresh)
 	*	@param[IN]  ADXL345 Sensor handler.
   * @retval 		Minimum threshold value for detecting activity.
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-double ADXL345_GetActivityThreshold(ComInput_Handle * ADXL345)
+double ADXL345_GetActivityThreshold(COM_Handle * ADXL345)
 {
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_ACT;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_ACT;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterGetter(ADXL345);
+	COM_RegisterGetter(ADXL345);
 													
-	return (COM_INPUT_I2C_DATA(ADXL345).data[0])*WINDOW_TIME_SCALE_FACTOR;
+	return (COM_I2C_DATA(ADXL345).data[0])*WINDOW_TIME_SCALE_FACTOR;
 }
 
 /**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -333,16 +329,16 @@ double ADXL345_GetActivityThreshold(ComInput_Handle * ADXL345)
   * @param[IN]  dInactThresh	Minimum threshold value for detecting activity.
   * @retval 		None
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-void ADXL345_SetInactivityThreshold(ComInput_Handle * ADXL345, double inactThresh)
+void ADXL345_SetInactivityThreshold(COM_Handle * ADXL345, double inactThresh)
 {
 	uint8_t	sendVal = inactThresh/INACTIVITY_THRESH_SCALE_FACTOR;
 	
-	COM_INPUT_I2C_DATA(ADXL345).data[0] = sendVal;
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_INACT;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).data[0] = sendVal;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_INACT;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterSetter(ADXL345);
+	COM_RegisterSetter(ADXL345);
 }
 
 /**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -352,15 +348,15 @@ void ADXL345_SetInactivityThreshold(ComInput_Handle * ADXL345, double inactThres
 	*	@param[IN]  ADXL345 Sensor handler.
   * @retval 		Minimum threshold value for detecting inactivity.
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-double ADXL345_GetInactivityThreshold(ComInput_Handle * ADXL345)
+double ADXL345_GetInactivityThreshold(COM_Handle * ADXL345)
 {
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_INACT;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_INACT;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterGetter(ADXL345);
+	COM_RegisterGetter(ADXL345);
 														
-	return (COM_INPUT_I2C_DATA(ADXL345).data[0])*INACTIVITY_THRESH_SCALE_FACTOR;
+	return (COM_I2C_DATA(ADXL345).data[0])*INACTIVITY_THRESH_SCALE_FACTOR;
 }
 
 /**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -374,16 +370,16 @@ double ADXL345_GetInactivityThreshold(ComInput_Handle * ADXL345)
   * @param[IN]  dMinInactTime	Minimum time value for detecting inactivity.
   * @retval 		None
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-void ADXL345_SetInactivityTime(ComInput_Handle * ADXL345, uint8_t minInactTime)
+void ADXL345_SetInactivityTime(COM_Handle * ADXL345, uint8_t minInactTime)
 {
 	uint8_t	sendVal = minInactTime/TIME_INACTIVITY_SCALE_FACTOR;
 	
-	COM_INPUT_I2C_DATA(ADXL345).data[0] = sendVal;
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_TIME_INACT;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).data[0] = sendVal;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_TIME_INACT;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterSetter(ADXL345);
+	COM_RegisterSetter(ADXL345);
 }
 
 /**------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -396,15 +392,15 @@ void ADXL345_SetInactivityTime(ComInput_Handle * ADXL345, uint8_t minInactTime)
 	*	@param[IN]  ADXL345 Sensor handler.
   * @retval 		Minimum time value for detecting inactivity.
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-uint8_t ADXL345_GetInactivityTime(ComInput_Handle * ADXL345)
+uint8_t ADXL345_GetInactivityTime(COM_Handle * ADXL345)
 {
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_TIME_INACT;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_TIME_INACT;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterGetter(ADXL345);
+	COM_RegisterGetter(ADXL345);
 																				
-	return (COM_INPUT_I2C_DATA(ADXL345).data[0])*TIME_INACTIVITY_SCALE_FACTOR;
+	return (COM_I2C_DATA(ADXL345).data[0])*TIME_INACTIVITY_SCALE_FACTOR;
 }
 
 /**---------------------------------------------------------------------------------------------------------------------
@@ -414,16 +410,16 @@ uint8_t ADXL345_GetInactivityTime(ComInput_Handle * ADXL345)
 	*	@param[IN]  pIntReg 	Contains which interrupt sources are enabled or disabled.
   * @retval 		None
   *---------------------------------------------------------------------------------------------------------------------*/
-void ADXL345_ConfigInterrupts(ComInput_Handle * ADXL345, const ADXL345_InterruptReg * intReg)
+void ADXL345_ConfigInterrupts(COM_Handle * ADXL345, const ADXL345_InterruptReg * intReg)
 {
 	uint8_t	sendVal = intReg->BYTE;
 	
-	COM_INPUT_I2C_DATA(ADXL345).data[0] = sendVal;
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_INT_ENABLE;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).data[0] = sendVal;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_INT_ENABLE;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterSetter(ADXL345);
+	COM_RegisterSetter(ADXL345);
 }
 
 /**---------------------------------------------------------------------------------------------------------------------
@@ -431,15 +427,15 @@ void ADXL345_ConfigInterrupts(ComInput_Handle * ADXL345, const ADXL345_Interrupt
 	*	@param[IN]  	ADXL345 Sensor handler.
   * @param[OUT] 	intReg	Status of interrupt bits.
   *---------------------------------------------------------------------------------------------------------------------*/
-void ADXL345_GetInterruptStatus(ComInput_Handle * ADXL345, ADXL345_InterruptReg * intReg)
+void ADXL345_GetInterruptStatus(COM_Handle * ADXL345, ADXL345_InterruptReg * intReg)
 {
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_INT_SOURCE;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_INT_SOURCE;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterGetter(ADXL345);
+	COM_RegisterGetter(ADXL345);
 													
-	intReg->BYTE=COM_INPUT_I2C_DATA(ADXL345).data[0];
+	intReg->BYTE=COM_I2C_DATA(ADXL345).data[0];
 }
 
 
@@ -453,7 +449,7 @@ void ADXL345_GetInterruptStatus(ComInput_Handle * ADXL345, ADXL345_InterruptReg 
 	*												Set bits of index of one  represents INT2 pins.
   * @retval 		None
   *---------------------------------------------------------------------------------------------------------------------*/
-void ADXL345_MapInterruptPins(ComInput_Handle * ADXL345, const ADXL345_InterruptReg pinMap)
+void ADXL345_MapInterruptPins(COM_Handle * ADXL345, const ADXL345_InterruptReg pinMap)
 {
 	/* It is recommended that interrupt bits be configured with the interrupts disabled,
 		 preventing interrupts from being accidentally triggered during configuration.
@@ -469,12 +465,12 @@ void ADXL345_MapInterruptPins(ComInput_Handle * ADXL345, const ADXL345_Interrupt
 
 	uint8_t sendVal = pinMap.BYTE;
 	
-	COM_INPUT_I2C_DATA(ADXL345).data[0] = sendVal;
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_INT_MAP;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).data[0] = sendVal;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_INT_MAP;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterSetter(ADXL345);
+	COM_RegisterSetter(ADXL345);
 	
 	/* Set all interrupts to their previous state */
 	intReg.BYTE = lastIntStatus.BYTE;
@@ -487,21 +483,21 @@ void ADXL345_MapInterruptPins(ComInput_Handle * ADXL345, const ADXL345_Interrupt
 	*	@param[OUT]	rawDatas	Not filtered datas represented every axis
   * @retval 		
   *------------------------------------------------------------------------------*/
-void ADXL345_GetRawDatas(ComInput_Handle * ADXL345, ADXL345_RawDatas * rawDatas)
+void ADXL345_GetRawDatas(COM_Handle * ADXL345, ADXL345_RawDatas * rawDatas)
 {
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 6;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_START_OF_DATA_REGS;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).dataSize = 6;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_START_OF_DATA_REGS;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterGetter(ADXL345);
+	COM_RegisterGetter(ADXL345);
 											
-	uint16_t xData = COM_INPUT_I2C_DATA(ADXL345).data[1]<<8 | COM_INPUT_I2C_DATA(ADXL345).data[0];
-	uint16_t yData = COM_INPUT_I2C_DATA(ADXL345).data[3]<<8 | COM_INPUT_I2C_DATA(ADXL345).data[2];
-	uint16_t zData = COM_INPUT_I2C_DATA(ADXL345).data[5]<<8 | COM_INPUT_I2C_DATA(ADXL345).data[4];
+	int16_t xData = (int16_t)(COM_I2C_DATA(ADXL345).data[1]<<8 | COM_I2C_DATA(ADXL345).data[0]);
+	int16_t yData = (int16_t)(COM_I2C_DATA(ADXL345).data[3]<<8 | COM_I2C_DATA(ADXL345).data[2]);
+	int16_t zData = (int16_t)(COM_I2C_DATA(ADXL345).data[5]<<8 | COM_I2C_DATA(ADXL345).data[4]);
 	
-	rawDatas->rawXData = Calc_GetHalfWord2sComplement(xData)*ADXL345_ACCEL_DATA_SCALE_FACTOR;
-	rawDatas->rawYData = Calc_GetHalfWord2sComplement(yData)*ADXL345_ACCEL_DATA_SCALE_FACTOR;
-	rawDatas->rawZData = Calc_GetHalfWord2sComplement(zData)*ADXL345_ACCEL_DATA_SCALE_FACTOR;
+	rawDatas->rawXData = xData*ADXL345_ACCEL_DATA_SCALE_FACTOR;
+	rawDatas->rawYData = yData*ADXL345_ACCEL_DATA_SCALE_FACTOR;
+	rawDatas->rawZData = zData*ADXL345_ACCEL_DATA_SCALE_FACTOR;
 }
 
 /**------------------------------------------------------------------------------
@@ -510,16 +506,16 @@ void ADXL345_GetRawDatas(ComInput_Handle * ADXL345, ADXL345_RawDatas * rawDatas)
  *	@param[IN]	dataFormat	The content of DATA_FORMAT register.
  *	@retval 		
  *-------------------------------------------------------------------------------*/
-void ADXL345_SetDataFormat(ComInput_Handle * ADXL345, const ADXL345_DataFormatReg * dataFormat)
+void ADXL345_SetDataFormat(COM_Handle * ADXL345, const ADXL345_DataFormatReg * dataFormat)
 {
 	uint8_t sendVal = dataFormat->BYTE;
 	
-	COM_INPUT_I2C_DATA(ADXL345).data[0] = sendVal;
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_DATA_FORMAT;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).data[0] = sendVal;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DATA_FORMAT;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterSetter(ADXL345);
+	COM_RegisterSetter(ADXL345);
 }
 
 /**------------------------------------------------------------------------------
@@ -528,15 +524,15 @@ void ADXL345_SetDataFormat(ComInput_Handle * ADXL345, const ADXL345_DataFormatRe
 	*	@param[OUT]	dataFormat	The content of DATA_FORMAT register.
   * @retval 		
   *------------------------------------------------------------------------------*/
-void ADXL345_GetDataFormat(ComInput_Handle * ADXL345, ADXL345_DataFormatReg * dataFormat)
+void ADXL345_GetDataFormat(COM_Handle * ADXL345, ADXL345_DataFormatReg * dataFormat)
 {
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_DATA_FORMAT;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DATA_FORMAT;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterGetter(ADXL345);
+	COM_RegisterGetter(ADXL345);
 	
-	dataFormat->BYTE = COM_INPUT_I2C_DATA(ADXL345).data[0];
+	dataFormat->BYTE = COM_I2C_DATA(ADXL345).data[0];
 }
 
 /**------------------------------------------------------------------------------
@@ -545,16 +541,16 @@ void ADXL345_GetDataFormat(ComInput_Handle * ADXL345, ADXL345_DataFormatReg * da
 	*	@param[OUT]	powerControl	The content of POWER_CTRL register.
   * @retval 		
   *------------------------------------------------------------------------------*/
-void ADXL345_SetPowerControl(ComInput_Handle * ADXL345, const ADXL345_PowerCtrReg * powerControl)
+void ADXL345_SetPowerControl(COM_Handle * ADXL345, const ADXL345_PowerCtrReg * powerControl)
 {
 	uint8_t sendVal = powerControl->BYTE;
 	
-	COM_INPUT_I2C_DATA(ADXL345).data[0] = sendVal;
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_POWER_CTL;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).data[0] = sendVal;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_POWER_CTL;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterSetter(ADXL345);
+	COM_RegisterSetter(ADXL345);
 }
 
 
@@ -564,15 +560,15 @@ void ADXL345_SetPowerControl(ComInput_Handle * ADXL345, const ADXL345_PowerCtrRe
 	*	@param[OUT]	powerControl	The content of POWER_CTRL register.
   * @retval 		
   *------------------------------------------------------------------------------*/
-void ADXL345_GetPowerControl(ComInput_Handle * ADXL345, ADXL345_PowerCtrReg * powerControl)
+void ADXL345_GetPowerControl(COM_Handle * ADXL345, ADXL345_PowerCtrReg * powerControl)
 {
-	COM_INPUT_I2C_DATA(ADXL345).dataSize = 1;
-	COM_INPUT_I2C_DATA(ADXL345).memAddress = ADXL345_POWER_CTL;
-	COM_INPUT_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
+	COM_I2C_DATA(ADXL345).dataSize = 1;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_POWER_CTL;
+	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
-	ComInput_RegisterGetter(ADXL345);
+	COM_RegisterGetter(ADXL345);
 	
-	powerControl->BYTE = COM_INPUT_I2C_DATA(ADXL345).data[0];
+	powerControl->BYTE = COM_I2C_DATA(ADXL345).data[0];
 }
 
 

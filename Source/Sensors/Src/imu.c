@@ -4,6 +4,7 @@
 #include "calc.h"
 #include <stdio.h>
 #include <string.h>
+#include "com_interface.h"
 
 /* Private define ------------------------------------------------------------*/
 #define ACCEL_BIAS_CALC_ITERATION			10
@@ -33,15 +34,14 @@ const osTimerAttr_t GetDatasTimerAttr =
 
 static char uartBuff[300]={0};
 
-static ADXL345_RawDatas 	accelRawDatas;
-static ITG3205_RawDatas 	gyroRawDatas;
-static HMC5883L_RawDatas	magnetoRawDatas;	
+static ADXL345_RawDatas 			accelRawDatas;
+static ITG3205_RawDatas 			gyroRawDatas;
+static HMC5883L_RawDatas			magnetoRawDatas;	
+static MPU6050_RawAccelDatas	mpuAccelRawDatas;
 
 static ADXL345_RawDatas 	accelBiasDatas;
 static ITG3205_RawDatas 	gyroBiasDatas;
 static HMC5883L_RawDatas	magnetoBiasDatas;
-
-
 
 static AxisAngles accelAngles;
 static AxisAngles gyroAngles;
@@ -50,6 +50,11 @@ static AxisAngles gyroPrevAngles;
 static AxisAngles eulerAngles;
 
 /* Exported variables --------------------------------------------------------*/
+COM_Handle 	ADXL345_ComHandle;
+COM_Handle 	ITG3205_ComHandle;
+COM_Handle 	HMC5883L_ComHandle;
+COM_Handle	MPU6050_ComHandle;
+
 extern I2C_HandleTypeDef 		hi2c1;
 extern UART_HandleTypeDef 	huart2;
 
@@ -72,15 +77,15 @@ static void IMU_SensorHandler (void *arg)
 	{
 		osThreadFlagsWait(IMU_PERIODIC_READ_FLAG, osFlagsWaitAll, osWaitForever);
 	
-		ADXL345_GetRawDatas(&(comInputs[COM_INPUT_TYPE_I2C][ADXL345_I2C_CHANNEL_NO]), &accelRawDatas);
-		ITG3205_GetRawDatas(&(comInputs[COM_INPUT_TYPE_I2C][ITG3205_I2C_CHANNEL_NO]), 	&gyroRawDatas);
+		ADXL345_GetRawDatas(&ADXL345_ComHandle, &accelRawDatas);
+		ITG3205_GetRawDatas(&ITG3205_ComHandle, &gyroRawDatas);
 		//HMC5883L_GetRawDatas(&(comInputs[COM_INPUT_TYPE_I2C][HMC5883L_I2C_CHANNEL_NO]), &magnetoRawDatas);
 		
 		/* Remove offset datas */
 		accelRawDatas.rawXData -= accelBiasDatas.rawXData;
 		accelRawDatas.rawYData -= accelBiasDatas.rawYData;
 		accelRawDatas.rawZData -= accelBiasDatas.rawZData;
-		
+
 		gyroRawDatas.rawXData -= gyroBiasDatas.rawXData;
 		gyroRawDatas.rawYData -= gyroBiasDatas.rawYData;
 		gyroRawDatas.rawZData -= gyroBiasDatas.rawZData;
@@ -130,51 +135,36 @@ static void IMU_GetDatasCallback (void *arg)
   *------------------------------------------------------------------------------*/
 void IMU_Init(void)
 {
-	
-	ComInput_Handle tempSensor;
-	
 	/* ADXL345 Init */
-	tempSensor.typeAndChannel = (ComInput_TypeAndChannel){.comInputType = COM_INPUT_TYPE_I2C, .channelNo = ADXL345_I2C_CHANNEL_NO};
-	tempSensor.comInputData.i2c.comHandle = &hi2c1;
-	tempSensor.comInputData.i2c.devAddress = ADXL345_I2C_DEV_ADDR_GND;
-	
-	ADXL345_InitSensor(&tempSensor);
+	ADXL345_ComHandle.comTypeChannel = &(comTypeAndChannels[COM_TYPE_I2C][COM_I2C1_CHANNEL_INDEX]);
+	ADXL345_ComHandle.comData.i2c.comHandle = &hi2c1;
+	ADXL345_ComHandle.comData.i2c.devAddress = ADXL345_I2C_DEV_ADDR_GND;
+	ADXL345_InitSensor(&ADXL345_ComHandle);
 															
 	/* ITG3205 Init */			
-	tempSensor.typeAndChannel = (ComInput_TypeAndChannel){.comInputType = COM_INPUT_TYPE_I2C, .channelNo = ITG3205_I2C_CHANNEL_NO};
-	tempSensor.comInputData.i2c.comHandle = &hi2c1;
-	tempSensor.comInputData.i2c.devAddress = ITG3205_I2C_DEV_ADDR_GND;
-
-	ITG3205_InitSensor(&tempSensor);
+	ITG3205_ComHandle.comTypeChannel = &(comTypeAndChannels[COM_TYPE_I2C][COM_I2C1_CHANNEL_INDEX]);
+	ITG3205_ComHandle.comData.i2c.comHandle = &hi2c1;
+	ITG3205_ComHandle.comData.i2c.devAddress = ITG3205_I2C_DEV_ADDR_GND;
+	ITG3205_InitSensor(&ITG3205_ComHandle);
 															
 	/* HMC5883L Init  */			
-	tempSensor.typeAndChannel = (ComInput_TypeAndChannel){.comInputType = COM_INPUT_TYPE_I2C, .channelNo = HMC5883L_I2C_CHANNEL_NO};
-	tempSensor.comInputData.i2c.comHandle = &hi2c1;
-	tempSensor.comInputData.i2c.devAddress = HMC5883L_I2C_DEV_ADDR;														
+	HMC5883L_ComHandle.comTypeChannel = &(comTypeAndChannels[COM_TYPE_I2C][COM_I2C1_CHANNEL_INDEX]);
+	HMC5883L_ComHandle.comData.i2c.comHandle = &hi2c1;
+	HMC5883L_ComHandle.comData.i2c.devAddress = HMC5883L_I2C_DEV_ADDR;														
+	//HMC5883L_InitSensor(&HMC5883L_ComHandle);
 	
-	//HMC5883L_InitSensor(&HMC5883L);
+//	/* MPU6050 Init */
+//	MPU6050_ComHandle.comTypeChannel = &(comTypeAndChannels[COM_TYPE_I2C][COM_I2C1_CHANNEL_INDEX]);
+//	MPU6050_ComHandle.comData.i2c.comHandle = &hi2c1;
+//	MPU6050_ComHandle.comData.i2c.devAddress = MPU6050_I2C_DEV_ADDR;		
+//	MPU6050_InitSensor(&MPU6050_ComHandle);
 	
-	/* Offset values read at first run */
-	IMU_GetAccelOffsetValues(&(comInputs[COM_INPUT_TYPE_I2C][ADXL345_I2C_CHANNEL_NO]), &accelBiasDatas);
-	IMU_GetGyroOffsetValues(&(comInputs[COM_INPUT_TYPE_I2C][ITG3205_I2C_CHANNEL_NO]), &gyroBiasDatas);
+	/* Offset values are read at first run */
+	IMU_GetAccelOffsetValues(&ADXL345_ComHandle, &accelBiasDatas);
+	IMU_GetGyroOffsetValues(&ITG3205_ComHandle, &gyroBiasDatas);
 	
-	
-	
-	TID_IMU = osThreadNew(IMU_SensorHandler, NULL, &IMUThreadAttr);
-	
-	if(TID_IMU == NULL)
-	{
-		//Thread couldn't be created.
-	}
-	
-	TIM_GetDatas = osTimerNew(IMU_GetDatasCallback, osTimerPeriodic, NULL, &GetDatasTimerAttr);
-	
-	if(TIM_GetDatas == NULL)
-	{
-		//Timer couldn't be created.
-	}
-	
-	
+	TID_IMU 			= osThreadNew(IMU_SensorHandler, NULL, &IMUThreadAttr);
+	TIM_GetDatas 	= osTimerNew(IMU_GetDatasCallback, osTimerPeriodic, NULL, &GetDatasTimerAttr);
 	
 	osTimerStart(TIM_GetDatas, Ts_PERIOD*SEC_TO_MS);
 }
@@ -213,7 +203,7 @@ void IMU_GetAngleFromGyro(ITG3205_RawDatas * rawDatas, AxisAngles * currAxisAngl
 	*	@param[OUT]		
   * @retval 		
   *------------------------------------------------------------------------------*/
-void IMU_GetAccelOffsetValues(ComInput_Handle * ADXL345, ADXL345_RawDatas * biasDatas)
+void IMU_GetAccelOffsetValues(COM_Handle * ADXL345, ADXL345_RawDatas * biasDatas)
 {
 	memset(biasDatas, 0x00, sizeof(ADXL345_RawDatas));
 	ADXL345_RawDatas tempDatas;
@@ -242,14 +232,13 @@ void IMU_GetAccelOffsetValues(ComInput_Handle * ADXL345, ADXL345_RawDatas * bias
 	*	@param[OUT]		
   * @retval 		
   *------------------------------------------------------------------------------*/
-void IMU_GetGyroOffsetValues(ComInput_Handle * ITG3205, ITG3205_RawDatas * biasDatas)
+void IMU_GetGyroOffsetValues(COM_Handle * ITG3205, ITG3205_RawDatas * biasDatas)
 {
 	memset(biasDatas, 0x00, sizeof(ITG3205_RawDatas));
 	ITG3205_RawDatas tempDatas;
 	
 	for(uint8_t i=0; i<GYRO_BIAS_CALC_ITERATION; i++)
 	{
-		
 		ITG3205_GetRawDatas(ITG3205, &tempDatas);
 		
 		biasDatas->rawXData += tempDatas.rawXData;
@@ -260,8 +249,6 @@ void IMU_GetGyroOffsetValues(ComInput_Handle * ITG3205, ITG3205_RawDatas * biasD
 	biasDatas->rawXData /=  (float)GYRO_BIAS_CALC_ITERATION;
 	biasDatas->rawYData /=  (float)GYRO_BIAS_CALC_ITERATION;
 	biasDatas->rawZData /=  (float)GYRO_BIAS_CALC_ITERATION;
-	
-	biasDatas->rawZData -= GRAVITY_ACCELERATION;
 }
 
 /**------------------------------------------------------------------------------
@@ -271,7 +258,7 @@ void IMU_GetGyroOffsetValues(ComInput_Handle * ITG3205, ITG3205_RawDatas * biasD
 	*	@param[OUT]		
   * @retval 		
   *------------------------------------------------------------------------------*/
-void IMU_GetMagnetoOffsetValues(ComInput_Handle * HMC5883L, HMC5883L_RawDatas * biasDatas)
+void IMU_GetMagnetoOffsetValues(COM_Handle * HMC5883L, HMC5883L_RawDatas * biasDatas)
 {
 
 }

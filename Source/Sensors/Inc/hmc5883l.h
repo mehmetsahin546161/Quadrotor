@@ -3,7 +3,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stdint.h"
-#include "com_input.h"
+#include "com_interface.h"
 
 /* Exported constants --------------------------------------------------------*/
 #define 	HMC5883L_CONFIG_REGISTER_A_ADDR						0x00
@@ -187,18 +187,18 @@ typedef struct
 
 /* Exported variables --------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
-void HMC5883L_InitSensor(ComInput_Handle * HMC5883L);
+void HMC5883L_InitSensor(COM_Handle * HMC5883L);
 
-void HMC5883L_SetConfiguration(ComInput_Handle * HMC5883L, const HMC5883L_ConfigAReg * configA, const HMC5883L_ConfigBReg * configB);
-void HMC5883L_GetConfiguration(ComInput_Handle * HMC5883L, HMC5883L_ConfigAReg * configA, HMC5883L_ConfigBReg * configB);
+void HMC5883L_SetConfiguration(COM_Handle * HMC5883L, const HMC5883L_ConfigAReg * configA, const HMC5883L_ConfigBReg * configB);
+void HMC5883L_GetConfiguration(COM_Handle * HMC5883L, HMC5883L_ConfigAReg * configA, HMC5883L_ConfigBReg * configB);
 
-void HMC5883L_SetMode(ComInput_Handle * HMC5883L, const HMC5883L_ModeReg * mode);
-void HMC5883L_GetMode(ComInput_Handle * HMC5883L, HMC5883L_ModeReg * mode);
+void HMC5883L_SetMode(COM_Handle * HMC5883L, const HMC5883L_ModeReg * mode);
+void HMC5883L_GetMode(COM_Handle * HMC5883L, HMC5883L_ModeReg * mode);
 
-void HMC5883L_GetRawDatas(ComInput_Handle * HMC5883L, HMC5883L_RawDatas * rawDatas);
+void HMC5883L_GetRawDatas(COM_Handle * HMC5883L, HMC5883L_RawDatas * rawDatas);
 
-void HMC5883L_GetStatus(ComInput_Handle * HMC5883L, HMC5883L_StatusReg * status);
+void HMC5883L_GetStatus(COM_Handle * HMC5883L, HMC5883L_StatusReg * status);
 
-void HMC5883L_GetIdentification(ComInput_Handle * HMC5883L, HMC5883L_Identification * identification);
+void HMC5883L_GetIdentification(COM_Handle * HMC5883L, HMC5883L_Identification * identification);
 
 #endif //_HMC5883L_H_

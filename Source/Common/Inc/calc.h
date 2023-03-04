@@ -19,10 +19,6 @@
 #define DEGREE_TO_RADIAN(X)  		(X*PI/180.0)
 
 /* Exported functions --------------------------------------------------------*/
-extern int8_t Calc_GetByte2sComplement(uint8_t data);
-extern int16_t Calc_GetHalfWord2sComplement(uint16_t data);
-extern int32_t Calc_GetWord2sComplement(uint32_t data);
-
 extern double Calc_GetDiscreteDerivative(double * currVal, double * prevVal, double samplingTime);
 extern double Calc_GetDiscreteIntegral(double * currVal, double * prevSum, double samplingTime);
 
