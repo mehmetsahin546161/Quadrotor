@@ -2,13 +2,10 @@
 #define _IMU_H_
 
 /* Includes ------------------------------------------------------------------*/
-#include "adxl345.h"
-#include "itg3205.h"
-#include "hmc5883l.h"
-#include "mpu6050.h"
+#include "com_interface.h"
 
 /* Exported define -----------------------------------------------------------*/
-#define Ts_PERIOD					0.1 		// Sec
+#define Ts_PERIOD					0.05 		// Sec
 
 #define ADXL345_I2C_DEVICE_INDEX		0
 #define ITG3205_I2C_DEVICE_INDEX		1
@@ -23,18 +20,44 @@ typedef struct
 	double yAngle;
 	double zAngle;
 
-}AxisAngles;
+}IMU_AxisAngles;
+
+typedef struct
+{
+	double xData;
+	double yData;
+	double zData;
+
+}IMU_AxisDatas;
 
 /* Exported variables --------------------------------------------------------*/
+extern COM_Handle 	ADXL345_ComHandle;
+extern COM_Handle 	ITG3205_ComHandle;
+extern COM_Handle 	HMC5883L_ComHandle;
+extern COM_Handle		MPU6050_ComHandle;
+
+extern IMU_AxisDatas 	adxl345AccelBias;
+extern IMU_AxisDatas 	mpu6050AccelBias;
+extern IMU_AxisDatas	itg3205GyroBias;
+extern IMU_AxisDatas 	mpu6050GyroBias;
+
+extern IMU_AxisAngles 	adxl345RawAccelAngle;
+extern IMU_AxisAngles 	mpu6050RawAccelAngle;
+extern IMU_AxisAngles		itg3205RawGyroAngle;
+extern IMU_AxisAngles 	mpu6050RawGyroAngle;
+extern IMU_AxisAngles 	hmc5883RawMagnetoAngle;
+
+extern IMU_AxisAngles		itg3205PrevGyroAngle;
+extern IMU_AxisAngles 	mpu6050PrevGyroAngle;
+
+extern IMU_AxisAngles eulerAngles;
+
 /* Exported functions --------------------------------------------------------*/
 
 void IMU_Init(void);
-void IMU_GetAngleFromAccelerometer(ADXL345_RawDatas * rawDatas, AxisAngles * axisAngles);
-void IMU_GetAngleFromGyro(ITG3205_RawDatas * rawDatas, AxisAngles * currAxisAngles, AxisAngles * prevAxisAngles, float periode);
-
-void IMU_GetAccelOffsetValues(COM_Handle * ADXL345, ADXL345_RawDatas * biasDatas);
-void IMU_GetGyroOffsetValues(COM_Handle * ITG3205, ITG3205_RawDatas * biasDatas);
-void IMU_GetMagnetoOffsetValues(COM_Handle * HMC5883L, HMC5883L_RawDatas * biasDatas);
-
+void IMU_RemoveBias(IMU_AxisDatas * axisData, const IMU_AxisDatas * axisBias);
+void IMU_GetAngleFromAccelerometer(IMU_AxisDatas * rawDatas, IMU_AxisAngles * axisAngles);
+void IMU_GetAngleFromGyro(IMU_AxisDatas * rawDatas, IMU_AxisAngles * currAngles, IMU_AxisAngles * prevSumAngles, float periode);
+void IMU_ConvertRadianToAngle(IMU_AxisAngles * axisAngles);
 
 #endif /* _IMU_H_ */

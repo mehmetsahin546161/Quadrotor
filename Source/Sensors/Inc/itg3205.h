@@ -2,29 +2,30 @@
 #define ITG3205_H
 
 /* Private includes ----------------------------------------------------------*/
-#include "stm32f407xx.h"
-#include "stm32f4xx_hal.h"
-#include "stm32f4xx_hal_i2c.h"
-#include <stdbool.h>
-#include "defines.h"
-#include "com_interface.h"
+#include 	"stm32f407xx.h"
+#include 	"stm32f4xx_hal.h"
+#include 	"stm32f4xx_hal_i2c.h"
+#include 	<stdbool.h>
+#include 	"defines.h"
+#include 	"com_interface.h"
+#include	"imu.h"
 
 /* Exported constants --------------------------------------------------------*/
 
-#define 	ITG3205_WHO_AM_I			0x00
-#define		ITG3205_SMPLRT_DIV		0x15
-#define		ITG3205_DLPF_FS				0x16
-#define		ITG3205_INT_CFG				0x17
-#define		ITG3205_INT_STATUS  	0x1A
-#define		ITG3205_TEMP_OUT_H		0x1B
-#define 	ITG3205_TEMP_OUT_L		0x1C
-#define		ITG3205_GYRO_XOUT_H		0x1D
-#define		ITG3205_GYRO_XOUT_L		0x1E
-#define 	ITG3205_GYRO_YOUT_H		0x1F
-#define		ITG3205_GYRO_YOUT_L 	0x20
-#define		ITG3205_GYRO_ZOUT_H		0x21
-#define		ITG3205_GYRO_ZOUT_L		0x22
-#define		ITG3205_PWR_MGM				0x3E
+#define 	ITG3205_WHO_AM_I_ADDR				0x00
+#define		ITG3205_SMPLRT_DIV_ADDR			0x15
+#define		ITG3205_DLPF_FS_ADDR				0x16
+#define		ITG3205_INT_CFG_ADDR				0x17
+#define		ITG3205_INT_STATUS_ADDR  		0x1A
+#define		ITG3205_TEMP_OUT_H_ADDR			0x1B
+#define 	ITG3205_TEMP_OUT_L_ADDR			0x1C
+#define		ITG3205_GYRO_XOUT_H_ADDR		0x1D
+#define		ITG3205_GYRO_XOUT_L_ADDR		0x1E
+#define 	ITG3205_GYRO_YOUT_H_ADDR		0x1F
+#define		ITG3205_GYRO_YOUT_L_ADDR 		0x20
+#define		ITG3205_GYRO_ZOUT_H_ADDR		0x21
+#define		ITG3205_GYRO_ZOUT_L_ADDR		0x22
+#define		ITG3205_PWR_MGM_ADDR				0x3E
 
 #define 	ITG3205_I2C_DEV_ADDR_GND  				0x68
 #define 	ITG3205_I2C_DEV_ADDR_VCC  				0x69
@@ -247,4 +248,6 @@ void ITG3205_GetRawDatas(COM_Handle * ITG3205, ITG3205_RawDatas * rawDatas);
 void ITG3205_SetPowerManagement(COM_Handle * ITG3205, const ITG3205_PowerManagementReg * powerManagement);
 void ITG3205_GetPowerManagement(COM_Handle * ITG3205, ITG3205_PowerManagementReg * powerManagement);
 
+void ITG3205_GetGyroOffsetValues(COM_Handle * ITG3205, IMU_AxisDatas * biasDatas);
+void ITG3205_GetAngle(COM_Handle * ITG3205, const IMU_AxisDatas * axisBias, IMU_AxisAngles * currAxisAngle, IMU_AxisAngles * prevAxisAngle);
 #endif //ITG3205_H

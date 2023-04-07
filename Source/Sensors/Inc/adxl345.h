@@ -2,12 +2,13 @@
 #define _ADXL345_H_
 
 /* Private includes ----------------------------------------------------------*/
-#include "stm32f407xx.h"
-#include "stm32f4xx_hal.h"
-#include "stm32f4xx_hal_i2c.h"
-#include <stdbool.h>
-#include "defines.h"
-#include "com_interface.h"
+#include 	"stm32f407xx.h"
+#include 	"stm32f4xx_hal.h"
+#include 	"stm32f4xx_hal_i2c.h"
+#include 	<stdbool.h>
+#include 	"defines.h"
+#include	"imu.h"
+#include 	"com_interface.h"
 
 /* Exported constants --------------------------------------------------------*/
 				
@@ -26,43 +27,43 @@
 
 //Register Map										
 														
-#define		ADXL345_DEVID											0x00		
-#define		ADXL345_THRESH_TAP								0x1D		
-#define		ADXL345_OFSX											0x1E		
-#define		ADXL345_OFSY											0x1F
-#define		ADXL345_OFSZ											0x20
-#define		ADXL345_DUR												0x21
-#define		ADXL345_LATENT										0x22
-#define		ADXL345_WINDOW 										0x23
-#define		ADXL345_THRESH_ACT 								0x24
-#define		ADXL345_THRESH_INACT 							0x25
-#define		ADXL345_TIME_INACT 								0x26
-#define		ADXL345_ACT_INACT_CTL 						0x27
-#define		ADXL345_THRESH_FF 								0x28
-#define		ADXL345_TIME_FF 									0x29
-#define		ADXL345_TAP_AXES 									0x2A
-#define		ADXL345_ACT_TAP_STATUS						0x2B
-#define		ADXL345_BW_RATE           				0x2C
-#define		ADXL345_POWER_CTL         				0x2D
-#define		ADXL345_INT_ENABLE        				0x2E
-#define		ADXL345_INT_MAP           				0x2F
-#define		ADXL345_INT_SOURCE        				0x30
-#define		ADXL345_DATA_FORMAT       				0x31
-#define		ADXL345_DATAX0            				0x32
-#define		ADXL345_DATAX1            				0x33
-#define		ADXL345_DATAY0            				0x34
-#define		ADXL345_DATAY1            				0x35
-#define		ADXL345_DATAZ0            				0x36
-#define		ADXL345_DATAZ1            				0x37
-#define		ADXL345_FIFO_CTL          				0x38
-#define		ADXL345_FIFO_STATUS       				0x39
+#define		ADXL345_DEVID_ADDR										0x00		
+#define		ADXL345_THRESH_TAP_ADDR								0x1D		
+#define		ADXL345_OFSX_ADDR											0x1E		
+#define		ADXL345_OFSY_ADDR											0x1F
+#define		ADXL345_OFSZ_ADDR											0x20
+#define		ADXL345_DUR_ADDR											0x21
+#define		ADXL345_LATENT_ADDR										0x22
+#define		ADXL345_WINDOW_ADDR 									0x23
+#define		ADXL345_THRESH_ACT_ADDR 							0x24
+#define		ADXL345_THRESH_INACT_ADDR 						0x25
+#define		ADXL345_TIME_INACT_ADDR 							0x26
+#define		ADXL345_ACT_INACT_CTL_ADDR 						0x27
+#define		ADXL345_THRESH_FF_ADDR 								0x28
+#define		ADXL345_TIME_FF_ADDR 									0x29
+#define		ADXL345_TAP_AXES_ADDR 								0x2A
+#define		ADXL345_ACT_TAP_STATUS_ADDR						0x2B
+#define		ADXL345_BW_RATE_ADDR           				0x2C
+#define		ADXL345_POWER_CTL_ADDR         				0x2D
+#define		ADXL345_INT_ENABLE_ADDR        				0x2E
+#define		ADXL345_INT_MAP_ADDR           				0x2F
+#define		ADXL345_INT_SOURCE_ADDR        				0x30
+#define		ADXL345_DATA_FORMAT_ADDR       				0x31
+#define		ADXL345_DATAX0_ADDR            				0x32
+#define		ADXL345_DATAX1_ADDR            				0x33
+#define		ADXL345_DATAY0_ADDR            				0x34
+#define		ADXL345_DATAY1_ADDR            				0x35
+#define		ADXL345_DATAZ0_ADDR            				0x36
+#define		ADXL345_DATAZ1_ADDR            				0x37
+#define		ADXL345_FIFO_CTL_ADDR          				0x38
+#define		ADXL345_FIFO_STATUS_ADDR       				0x39
 		
 #define 	ADXL345_INT_PIN_CNT								0x02
 #define 	ADXL345_AXIS_COUNT								0x03
 #define 	ADXL345_REG_MSB_BIT								7
 #define 	ADXL345_AXIS_DATAS_NOT_READY			((float)(0xDEAD))
 
-#define   ADXL345_START_OF_DATA_REGS 				ADXL345_DATAX0
+#define   ADXL345_START_OF_DATA_ADDR 				ADXL345_DATAX0_ADDR
 #define 	ADXL345_RESET_ALL_INTERRUPTS 			0x00
 #define 	ADXL345_SET_ALL_INTERRUPTS				0xFF
 
@@ -330,5 +331,8 @@ void ADXL345_GetDataFormat(COM_Handle * ADXL345, ADXL345_DataFormatReg * dataFor
 
 void ADXL345_SetPowerControl(COM_Handle * ADXL345, const ADXL345_PowerCtrReg * powerControl);
 void ADXL345_GetPowerControl(COM_Handle * ADXL345, ADXL345_PowerCtrReg * powerControl);
+
+void ADXL345_GetAccelOffsetValues(COM_Handle * ADXL345, IMU_AxisDatas * biasDatas);
+void ADXL345_GetAngle(COM_Handle * ADXL345, const IMU_AxisDatas * axisBias, IMU_AxisAngles * axisAngle);
 
 #endif //_ADXL345_H_

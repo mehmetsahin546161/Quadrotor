@@ -476,6 +476,11 @@
               <FileType>1</FileType>
               <FilePath>.\Source\Sensors\Src\imu.c</FilePath>
             </File>
+            <File>
+              <FileName>bmx160.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\Sensors\Src\bmx160.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

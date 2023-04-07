@@ -5,22 +5,24 @@
 #include "stdint.h"
 #include "stdbool.h"
 #include "com_interface.h"
+#include "imu.h"
+
 /* Exported define -----------------------------------------------------------*/
 
 /* MPU6050  Registers */
-#define MPU6050_SMPLRT_DIV_REG 			0x19
-#define MPU6050_GYRO_CONFIG_REG 		0x1B
-#define MPU6050_ACCEL_CONFIG_REG 		0x1C
-#define MPU6050_ACCEL_XOUT_H_REG 		0x3B
-#define MPU6050_TEMP_OUT_H_REG 			0x41
-#define MPU6050_GYRO_XOUT_H_REG 		0x43
-#define MPU6050_PWR_MGMT_1_REG 			0x6B
-#define MPU6050_WHO_AM_I_REG 				0x75
+#define MPU6050_SMPLRT_DIV_ADDR 			0x19
+#define MPU6050_GYRO_CONFIG_ADDR 			0x1B
+#define MPU6050_ACCEL_CONFIG_ADDR 		0x1C
+#define MPU6050_ACCEL_XOUT_H_ADDR 		0x3B
+#define MPU6050_TEMP_OUT_H_ADDR 			0x41
+#define MPU6050_GYRO_XOUT_H_ADDR 			0x43
+#define MPU6050_PWR_MGMT_1_ADDR 			0x6B
+#define MPU6050_WHO_AM_I_ADDR 				0x75
 
-#define MPU6050_I2C_DEV_ADDR 				0xD0
+#define MPU6050_I2C_DEV_ADDR 				0x68		/* Not Shifted */
 
-#define MPU6050_START_OF_ACCEL_DATA_REGS	MPU6050_ACCEL_XOUT_H_REG
-#define MPU6050_START_OF_GYRO_DATA_REGS		MPU6050_GYRO_XOUT_H_REG
+#define MPU6050_START_OF_ACCEL_DATA_ADDR	MPU6050_ACCEL_XOUT_H_ADDR
+#define MPU6050_START_OF_GYRO_DATA_ADDR		MPU6050_GYRO_XOUT_H_ADDR
 
 #define MPU6050_ACCEL_DATA_SCALE_FACTOR   (0.00006103515625)		/* Full Scale Range ±2g */
 #define MPU6050_GYRO_DATA_SCALE_FACTOR   	(0.0076335877)				/* Full Scale Range ± 250°/s */
@@ -144,5 +146,11 @@ void MPU6050_GetGyroConfig(COM_Handle * MPU6050, MPU6050_GyroConfigReg * gyroCon
 
 void MPU6050_GetRawAccelDatas(COM_Handle * MPU6050, MPU6050_RawAccelDatas * rawDatas);
 void MPU6050_GetRawGyroDatas(COM_Handle * MPU6050, MPU6050_RawGyroDatas * rawDatas);
+
+void MPU6050_GetAccelOffsetValues(COM_Handle * MPU6050, IMU_AxisDatas * biasDatas);
+void MPU6050_GetGyroOffsetValues(COM_Handle * MPU6050, IMU_AxisDatas * biasDatas);
+
+void MPU6050_GetAccelAngle(COM_Handle * ADXL345, const IMU_AxisDatas * axisBias, IMU_AxisAngles * axisAngle);
+void MPU6050_GetGyroAngle(COM_Handle * ITG3205, const IMU_AxisDatas * axisBias, IMU_AxisAngles * currAxisAngle, IMU_AxisAngles * prevAxisAngle);
 
 #endif /* _MPU6050_H_ */

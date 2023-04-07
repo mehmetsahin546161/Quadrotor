@@ -279,8 +279,8 @@ void COM_Init()
 			comRXThreadAttr[comType][channelNo].name = tempTxt;
 			comRXThreadAttr[comType][channelNo].priority = osPriorityAboveNormal;
 			
-			TID_ComTx[comType][channelNo] = osThreadNew(COM_SendHandler, (void*)&(comTypeAndChannels[comType][channelNo]) , &(comTXThreadAttr[comType][channelNo]) );
-			TID_ComRx[comType][channelNo] = osThreadNew(COM_ReceiveHandler, (void*)&(comTypeAndChannels[comType][channelNo]), &(comRXThreadAttr[comType][channelNo]) );
+			TID_ComTx[comType][channelNo] = osThreadNew(COM_SendHandler, 		(void*)&(comTypeAndChannels[comType][channelNo]) , 	&(comTXThreadAttr[comType][channelNo]) );
+			TID_ComRx[comType][channelNo] = osThreadNew(COM_ReceiveHandler, (void*)&(comTypeAndChannels[comType][channelNo]), 	&(comRXThreadAttr[comType][channelNo]) );
 		}
 		
 		

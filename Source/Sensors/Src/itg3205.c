@@ -1,10 +1,14 @@
 #include 	"itg3205.h"
 #include 	"cmsis_os2.h"
-#include	"defines.h"
-#include   "calc.h"
+#include 	"defines.h"
+#include 	"calc.h"
+#include 	"string.h"
+
+
+/* Private define ------------------------------------------------------------*/
+#define ITG3205_GYRO_BIAS_CALC_ITERATION			100
 
 /* Private constants ---------------------------------------------------------*/
-
 
 /* Exported functions --------------------------------------------------------*/
 
@@ -29,7 +33,7 @@ void ITG3205_InitSensor(COM_Handle * ITG3205)
 	ITG3205_SetPowerManagement(ITG3205, &powerManagement);
 	
 	/* Sample Rate Divider */
-	ITG3205_SetSampleRateDivider(ITG3205, 0x07);
+	//ITG3205_SetSampleRateDivider(ITG3205, 1);
 	
 	/* Lowpass and Full Scale */
 	ITG3205_FullScaleAndLowPassReg fullScaleAndLowPassReg = 
@@ -236,4 +240,51 @@ void ITG3205_GetPowerManagement(COM_Handle * ITG3205, ITG3205_PowerManagementReg
 	COM_RegisterGetter(ITG3205);
 											
 	powerManagement->BYTE = COM_I2C_DATA(ITG3205).data[0];
+}
+
+/**-----------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *-----------------------------------------------------------------------------------------------------------------*/
+void ITG3205_GetGyroOffsetValues(COM_Handle * ITG3205, IMU_AxisDatas * biasDatas)
+{
+	memset(biasDatas, 0x00, sizeof(IMU_AxisDatas));
+	ITG3205_RawDatas tempDatas;
+	
+	for(uint8_t i=0; i<ITG3205_GYRO_BIAS_CALC_ITERATION; i++)
+	{
+		ITG3205_GetRawDatas(ITG3205, &tempDatas);
+		
+		biasDatas->xData += tempDatas.rawXData;
+		biasDatas->yData += tempDatas.rawYData;
+		biasDatas->zData += tempDatas.rawZData;
+	}
+	
+	biasDatas->xData /=  (float)ITG3205_GYRO_BIAS_CALC_ITERATION;
+	biasDatas->yData /=  (float)ITG3205_GYRO_BIAS_CALC_ITERATION;
+	biasDatas->zData /=  (float)ITG3205_GYRO_BIAS_CALC_ITERATION;
+}
+
+/**-----------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *-----------------------------------------------------------------------------------------------------------------*/
+void ITG3205_GetAngle(COM_Handle * ITG3205, const IMU_AxisDatas * axisBias, IMU_AxisAngles * currAxisAngle, IMU_AxisAngles * prevAxisAngle)
+{
+	IMU_AxisDatas 	 	axisData={0};
+	ITG3205_RawDatas 	itg3205TempGyroData={0};
+	
+	ITG3205_GetRawDatas(ITG3205, &itg3205TempGyroData);
+	
+	axisData.xData = itg3205TempGyroData.rawXData;
+	axisData.yData = itg3205TempGyroData.rawYData;
+	axisData.zData = itg3205TempGyroData.rawZData;
+	
+	IMU_RemoveBias(&axisData, axisBias);
+	
+	IMU_GetAngleFromGyro(&axisData, currAxisAngle, prevAxisAngle, Ts_PERIOD);
 }

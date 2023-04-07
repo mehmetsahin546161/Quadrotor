@@ -2,7 +2,8 @@
 #include 	"cmsis_os2.h"
 #include 	"com_interface.h"
 #include	"defines.h"
-#include   "calc.h"
+#include 	"calc.h"
+#include 	"string.h"
 
 /* Private macro -------------------------------------------------------------*/
 #define ADXL345_SINGLE_BYTE_WRITE_CNT 				(5)
@@ -10,6 +11,9 @@
 
 #define ADXL345_MULTIPLE_BYTE_WRITE_CNT(X)		(ADXL345_SINGLE_BYTE_WRITE_CNT + X)
 #define ADXL345_MULTIPLE_BYTE_READ_CNT(X) 		(ADXL345_SINGLE_BYTE_READ_CNT + X)
+
+#define ADXL345_ACCEL_BIAS_CALC_ITERATION			10
+#define ADXL345_GRAVITY_ACCELERATION					1			/* g */
 /* Private types -------------------------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
@@ -50,7 +54,7 @@ void ADXL345_InitSensor(COM_Handle * ADXL345)
 uint8_t ADXL345_WhoAmI(COM_Handle * ADXL345)
 {
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DEVID;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DEVID_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(ADXL345);
@@ -74,7 +78,7 @@ void ADXL345_SetTapThreshold(COM_Handle * ADXL345, double tapThresh)
 		
 		COM_I2C_DATA(ADXL345).data[0] = sendVal;
 		COM_I2C_DATA(ADXL345).dataSize = 1;
-		COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_TAP;
+		COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_TAP_ADDR;
 		COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 		
 		COM_RegisterSetter(ADXL345);
@@ -91,7 +95,7 @@ void ADXL345_SetTapThreshold(COM_Handle * ADXL345, double tapThresh)
 double ADXL345_GetTapThreshold(COM_Handle * ADXL345)
 {
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_TAP;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_TAP_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(ADXL345);
@@ -114,9 +118,9 @@ void ADXL345_SetOffset(COM_Handle * ADXL345, ADXL345_Axis axis, double offset)
 		uint8_t sendVal = (offset<0) ? (uint8_t)(~((uint8_t)(-1*offset*(1.0/OFFSET_SCALE_FACTOR)))) + 1 :
 											(offset>0) ? (offset*(1.0/OFFSET_SCALE_FACTOR))	:	0;
 		
-		uint8_t memAddress = (axis==ADXL345_X_AXIS) ? ADXL345_OFSX :
-												 (axis==ADXL345_Y_AXIS) ? ADXL345_OFSY :
-												 (axis==ADXL345_Z_AXIS) ? ADXL345_OFSZ :
+		uint8_t memAddress = (axis==ADXL345_X_AXIS) ? ADXL345_OFSX_ADDR :
+												 (axis==ADXL345_Y_AXIS) ? ADXL345_OFSY_ADDR :
+												 (axis==ADXL345_Z_AXIS) ? ADXL345_OFSZ_ADDR :
 																					INVALID_DATA;
 		
 		if(memAddress != INVALID_DATA)
@@ -140,9 +144,9 @@ void ADXL345_SetOffset(COM_Handle * ADXL345, ADXL345_Axis axis, double offset)
   *------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 double ADXL345_GetOffset(COM_Handle * ADXL345, ADXL345_Axis axis)
 {
-	uint8_t memAddress = 	(axis==ADXL345_X_AXIS) ? ADXL345_OFSX :
-												(axis==ADXL345_Y_AXIS) ? ADXL345_OFSY :
-												(axis==ADXL345_Z_AXIS) ? ADXL345_OFSZ	: INVALID_DATA;
+	uint8_t memAddress = 	(axis==ADXL345_X_AXIS) ? ADXL345_OFSX_ADDR :
+												(axis==ADXL345_Y_AXIS) ? ADXL345_OFSY_ADDR :
+												(axis==ADXL345_Z_AXIS) ? ADXL345_OFSZ_ADDR	: INVALID_DATA;
 		
 	if(memAddress != INVALID_DATA)
 	{
@@ -179,7 +183,7 @@ void ADXL345_SetMaxTapDuration(COM_Handle * ADXL345, uint32_t maxTapDur)
 	
 	COM_I2C_DATA(ADXL345).data[0] = sendVal;
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DUR;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DUR_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterSetter(ADXL345);
@@ -195,7 +199,7 @@ void ADXL345_SetMaxTapDuration(COM_Handle * ADXL345, uint32_t maxTapDur)
 uint32_t ADXL345_GetMaxTapDuration(COM_Handle * ADXL345)
 {
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DUR;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DUR_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(ADXL345);
@@ -218,7 +222,7 @@ void ADXL345_SetLatencyTime(COM_Handle * ADXL345, double latTime)
 	
 	COM_I2C_DATA(ADXL345).data[0] = sendVal;
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_LATENT;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_LATENT_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterSetter(ADXL345);
@@ -235,7 +239,7 @@ void ADXL345_SetLatencyTime(COM_Handle * ADXL345, double latTime)
 double ADXL345_GetLatencyTime(COM_Handle * ADXL345)
 {
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_LATENT;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_LATENT_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(ADXL345);																		
@@ -258,7 +262,7 @@ void ADXL345_SetWindowTime(COM_Handle * ADXL345, double winTime)
 	
 	COM_I2C_DATA(ADXL345).data[0] = sendVal;
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_WINDOW;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_WINDOW_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterSetter(ADXL345);
@@ -275,7 +279,7 @@ void ADXL345_SetWindowTime(COM_Handle * ADXL345, double winTime)
 double ADXL345_GetWindowTime(COM_Handle * ADXL345)
 {
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_WINDOW;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_WINDOW_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(ADXL345);
@@ -297,7 +301,7 @@ void ADXL345_SetActivityThreshold(COM_Handle * ADXL345, double actThresh)
 	
 	COM_I2C_DATA(ADXL345).data[0] = sendVal;
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_ACT;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_ACT_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterSetter(ADXL345);
@@ -313,7 +317,7 @@ void ADXL345_SetActivityThreshold(COM_Handle * ADXL345, double actThresh)
 double ADXL345_GetActivityThreshold(COM_Handle * ADXL345)
 {
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_ACT;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_ACT_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(ADXL345);
@@ -335,7 +339,7 @@ void ADXL345_SetInactivityThreshold(COM_Handle * ADXL345, double inactThresh)
 	
 	COM_I2C_DATA(ADXL345).data[0] = sendVal;
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_INACT;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_INACT_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterSetter(ADXL345);
@@ -351,7 +355,7 @@ void ADXL345_SetInactivityThreshold(COM_Handle * ADXL345, double inactThresh)
 double ADXL345_GetInactivityThreshold(COM_Handle * ADXL345)
 {
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_INACT;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_THRESH_INACT_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(ADXL345);
@@ -376,7 +380,7 @@ void ADXL345_SetInactivityTime(COM_Handle * ADXL345, uint8_t minInactTime)
 	
 	COM_I2C_DATA(ADXL345).data[0] = sendVal;
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_TIME_INACT;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_TIME_INACT_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterSetter(ADXL345);
@@ -395,7 +399,7 @@ void ADXL345_SetInactivityTime(COM_Handle * ADXL345, uint8_t minInactTime)
 uint8_t ADXL345_GetInactivityTime(COM_Handle * ADXL345)
 {
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_TIME_INACT;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_TIME_INACT_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(ADXL345);
@@ -416,7 +420,7 @@ void ADXL345_ConfigInterrupts(COM_Handle * ADXL345, const ADXL345_InterruptReg *
 	
 	COM_I2C_DATA(ADXL345).data[0] = sendVal;
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_INT_ENABLE;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_INT_ENABLE_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterSetter(ADXL345);
@@ -430,7 +434,7 @@ void ADXL345_ConfigInterrupts(COM_Handle * ADXL345, const ADXL345_InterruptReg *
 void ADXL345_GetInterruptStatus(COM_Handle * ADXL345, ADXL345_InterruptReg * intReg)
 {
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_INT_SOURCE;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_INT_SOURCE_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(ADXL345);
@@ -467,7 +471,7 @@ void ADXL345_MapInterruptPins(COM_Handle * ADXL345, const ADXL345_InterruptReg p
 	
 	COM_I2C_DATA(ADXL345).data[0] = sendVal;
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_INT_MAP;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_INT_MAP_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterSetter(ADXL345);
@@ -486,7 +490,7 @@ void ADXL345_MapInterruptPins(COM_Handle * ADXL345, const ADXL345_InterruptReg p
 void ADXL345_GetRawDatas(COM_Handle * ADXL345, ADXL345_RawDatas * rawDatas)
 {
 	COM_I2C_DATA(ADXL345).dataSize = 6;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_START_OF_DATA_REGS;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_START_OF_DATA_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(ADXL345);
@@ -512,7 +516,7 @@ void ADXL345_SetDataFormat(COM_Handle * ADXL345, const ADXL345_DataFormatReg * d
 	
 	COM_I2C_DATA(ADXL345).data[0] = sendVal;
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DATA_FORMAT;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DATA_FORMAT_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterSetter(ADXL345);
@@ -527,7 +531,7 @@ void ADXL345_SetDataFormat(COM_Handle * ADXL345, const ADXL345_DataFormatReg * d
 void ADXL345_GetDataFormat(COM_Handle * ADXL345, ADXL345_DataFormatReg * dataFormat)
 {
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DATA_FORMAT;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_DATA_FORMAT_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(ADXL345);
@@ -547,7 +551,7 @@ void ADXL345_SetPowerControl(COM_Handle * ADXL345, const ADXL345_PowerCtrReg * p
 	
 	COM_I2C_DATA(ADXL345).data[0] = sendVal;
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_POWER_CTL;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_POWER_CTL_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterSetter(ADXL345);
@@ -563,7 +567,7 @@ void ADXL345_SetPowerControl(COM_Handle * ADXL345, const ADXL345_PowerCtrReg * p
 void ADXL345_GetPowerControl(COM_Handle * ADXL345, ADXL345_PowerCtrReg * powerControl)
 {
 	COM_I2C_DATA(ADXL345).dataSize = 1;
-	COM_I2C_DATA(ADXL345).memAddress = ADXL345_POWER_CTL;
+	COM_I2C_DATA(ADXL345).memAddress = ADXL345_POWER_CTL_ADDR;
 	COM_I2C_DATA(ADXL345).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(ADXL345);
@@ -571,4 +575,53 @@ void ADXL345_GetPowerControl(COM_Handle * ADXL345, ADXL345_PowerCtrReg * powerCo
 	powerControl->BYTE = COM_I2C_DATA(ADXL345).data[0];
 }
 
+/**------------------------------------------------------------------------------
+  * @brief  			
+	* @note					
+	*	@param[IN]  	
+	*	@param[OUT]		
+  * @retval 		
+  *------------------------------------------------------------------------------*/
+void ADXL345_GetAccelOffsetValues(COM_Handle * ADXL345, IMU_AxisDatas * biasDatas)
+{
+	memset(biasDatas, 0x00, sizeof(IMU_AxisDatas));
+	ADXL345_RawDatas tempDatas;
+	
+	for(uint8_t i=0; i<ADXL345_ACCEL_BIAS_CALC_ITERATION; i++)
+	{
+		ADXL345_GetRawDatas(ADXL345, &tempDatas);
+		
+		biasDatas->xData += tempDatas.rawXData;
+		biasDatas->yData += tempDatas.rawYData;
+		biasDatas->zData += tempDatas.rawZData;
+	}
+	
+	biasDatas->xData /=  (float)ADXL345_ACCEL_BIAS_CALC_ITERATION;
+	biasDatas->yData /=  (float)ADXL345_ACCEL_BIAS_CALC_ITERATION;
+	biasDatas->zData /=  (float)ADXL345_ACCEL_BIAS_CALC_ITERATION;
+	
+	biasDatas->zData -= ADXL345_GRAVITY_ACCELERATION;
+}
 
+/**------------------------------------------------------------------------------
+  * @brief  			
+	* @note					
+	*	@param[IN]  	
+	*	@param[OUT]		
+  * @retval 		
+  *------------------------------------------------------------------------------*/
+void ADXL345_GetAngle(COM_Handle * ADXL345, const IMU_AxisDatas * axisBias, IMU_AxisAngles * axisAngle)
+{
+	IMU_AxisDatas 	 	axisData={0};
+	ADXL345_RawDatas 	adxl345TempAccelData={0};
+	
+	ADXL345_GetRawDatas(ADXL345, &adxl345TempAccelData);
+	
+	axisData.xData = adxl345TempAccelData.rawXData;
+	axisData.yData = adxl345TempAccelData.rawYData;
+	axisData.zData = adxl345TempAccelData.rawZData;
+	
+	IMU_RemoveBias(&axisData, axisBias);
+	
+	IMU_GetAngleFromAccelerometer(&axisData, axisAngle);
+}

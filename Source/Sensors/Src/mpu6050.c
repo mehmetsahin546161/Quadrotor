@@ -1,7 +1,13 @@
 /* Includes ------------------------------------------------------------------*/
 #include "mpu6050.h"
+#include "string.h"
 
 /* Private define ------------------------------------------------------------*/
+#define MPU6050_ACCEL_BIAS_CALC_ITERATION			10
+#define MPU6050_GYRO_BIAS_CALC_ITERATION			100
+
+#define MPU6050_GRAVITY_ACCELERATION					1			/* g */
+
 /* Private macro -------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -60,7 +66,7 @@ void MPU6050_SetSampleRateDivider(COM_Handle * MPU6050, uint8_t sampleRateDiv)
 		
 	COM_I2C_DATA(MPU6050).data[0] = sendVal;
 	COM_I2C_DATA(MPU6050).dataSize = 1;
-	COM_I2C_DATA(MPU6050).memAddress = MPU6050_SMPLRT_DIV_REG;
+	COM_I2C_DATA(MPU6050).memAddress = MPU6050_SMPLRT_DIV_ADDR;
 	COM_I2C_DATA(MPU6050).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterSetter(MPU6050);
@@ -75,7 +81,7 @@ void MPU6050_SetSampleRateDivider(COM_Handle * MPU6050, uint8_t sampleRateDiv)
 uint8_t MPU6050_GetSampleRateDivider(COM_Handle * MPU6050)
 {
 	COM_I2C_DATA(MPU6050).dataSize = 1;
-	COM_I2C_DATA(MPU6050).memAddress = MPU6050_SMPLRT_DIV_REG;
+	COM_I2C_DATA(MPU6050).memAddress = MPU6050_SMPLRT_DIV_ADDR;
 	COM_I2C_DATA(MPU6050).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(MPU6050);
@@ -95,7 +101,7 @@ void MPU6050_SetPowerManagement(COM_Handle * MPU6050, const MPU6050_PowerManagem
 	
 	COM_I2C_DATA(MPU6050).data[0] = sendVal;
 	COM_I2C_DATA(MPU6050).dataSize = 1;
-	COM_I2C_DATA(MPU6050).memAddress = MPU6050_PWR_MGMT_1_REG;
+	COM_I2C_DATA(MPU6050).memAddress = MPU6050_PWR_MGMT_1_ADDR;
 	COM_I2C_DATA(MPU6050).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterSetter(MPU6050);
@@ -110,7 +116,7 @@ void MPU6050_SetPowerManagement(COM_Handle * MPU6050, const MPU6050_PowerManagem
 void MPU6050_GetPowerManagement(COM_Handle * MPU6050, MPU6050_PowerManagement1Reg * powerManagement)
 {
 	COM_I2C_DATA(MPU6050).dataSize = 1;
-	COM_I2C_DATA(MPU6050).memAddress = MPU6050_PWR_MGMT_1_REG;
+	COM_I2C_DATA(MPU6050).memAddress = MPU6050_PWR_MGMT_1_ADDR;
 	COM_I2C_DATA(MPU6050).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(MPU6050);
@@ -130,7 +136,7 @@ void MPU6050_SetAccelConfig(COM_Handle * MPU6050, const MPU6050_AccelConfigReg *
 	
 	COM_I2C_DATA(MPU6050).data[0] = sendVal;
 	COM_I2C_DATA(MPU6050).dataSize = 1;
-	COM_I2C_DATA(MPU6050).memAddress = MPU6050_ACCEL_CONFIG_REG;
+	COM_I2C_DATA(MPU6050).memAddress = MPU6050_ACCEL_CONFIG_ADDR;
 	COM_I2C_DATA(MPU6050).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterSetter(MPU6050);
@@ -145,7 +151,7 @@ void MPU6050_SetAccelConfig(COM_Handle * MPU6050, const MPU6050_AccelConfigReg *
 void MPU6050_GetAccelConfig(COM_Handle * MPU6050, MPU6050_AccelConfigReg * accelConfig)
 {
 	COM_I2C_DATA(MPU6050).dataSize = 1;
-	COM_I2C_DATA(MPU6050).memAddress = MPU6050_ACCEL_CONFIG_REG;
+	COM_I2C_DATA(MPU6050).memAddress = MPU6050_ACCEL_CONFIG_ADDR;
 	COM_I2C_DATA(MPU6050).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(MPU6050);
@@ -165,7 +171,7 @@ void MPU6050_SetGyroConfig(COM_Handle * MPU6050, const MPU6050_GyroConfigReg * g
 	
 	COM_I2C_DATA(MPU6050).data[0] = sendVal;
 	COM_I2C_DATA(MPU6050).dataSize = 1;
-	COM_I2C_DATA(MPU6050).memAddress = MPU6050_GYRO_CONFIG_REG;
+	COM_I2C_DATA(MPU6050).memAddress = MPU6050_GYRO_CONFIG_ADDR;
 	COM_I2C_DATA(MPU6050).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterSetter(MPU6050);
@@ -180,7 +186,7 @@ void MPU6050_SetGyroConfig(COM_Handle * MPU6050, const MPU6050_GyroConfigReg * g
 void MPU6050_GetGyroConfig(COM_Handle * MPU6050, MPU6050_GyroConfigReg * gyroConfig)
 {
 	COM_I2C_DATA(MPU6050).dataSize = 1;
-	COM_I2C_DATA(MPU6050).memAddress = MPU6050_GYRO_CONFIG_REG;
+	COM_I2C_DATA(MPU6050).memAddress = MPU6050_GYRO_CONFIG_ADDR;
 	COM_I2C_DATA(MPU6050).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(MPU6050);
@@ -197,7 +203,7 @@ void MPU6050_GetGyroConfig(COM_Handle * MPU6050, MPU6050_GyroConfigReg * gyroCon
 void MPU6050_GetRawAccelDatas(COM_Handle * MPU6050, MPU6050_RawAccelDatas * rawDatas)
 {
 	COM_I2C_DATA(MPU6050).dataSize = 6;
-	COM_I2C_DATA(MPU6050).memAddress = MPU6050_START_OF_ACCEL_DATA_REGS;
+	COM_I2C_DATA(MPU6050).memAddress = MPU6050_START_OF_ACCEL_DATA_ADDR;
 	COM_I2C_DATA(MPU6050).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(MPU6050);
@@ -220,7 +226,7 @@ void MPU6050_GetRawAccelDatas(COM_Handle * MPU6050, MPU6050_RawAccelDatas * rawD
 void MPU6050_GetRawGyroDatas(COM_Handle * MPU6050, MPU6050_RawGyroDatas * rawDatas)
 {
 	COM_I2C_DATA(MPU6050).dataSize = 6;
-	COM_I2C_DATA(MPU6050).memAddress = MPU6050_START_OF_GYRO_DATA_REGS;
+	COM_I2C_DATA(MPU6050).memAddress = MPU6050_START_OF_GYRO_DATA_ADDR;
 	COM_I2C_DATA(MPU6050).memAddSize = I2C_MEMADD_SIZE_8BIT;
 	
 	COM_RegisterGetter(MPU6050);
@@ -234,5 +240,103 @@ void MPU6050_GetRawGyroDatas(COM_Handle * MPU6050, MPU6050_RawGyroDatas * rawDat
 	rawDatas->rawZData = zData*MPU6050_GYRO_DATA_SCALE_FACTOR;
 }
 
+/**------------------------------------------------------------------------------
+  * @brief  			
+	* @note					
+	*	@param[IN]  	
+	*	@param[OUT]		
+  * @retval 		
+  *------------------------------------------------------------------------------*/
+void MPU6050_GetAccelOffsetValues(COM_Handle * MPU6050, IMU_AxisDatas * biasDatas)
+{
+	memset(biasDatas, 0x00, sizeof(IMU_AxisDatas));
+	MPU6050_RawAccelDatas tempDatas;
+	
+	for(uint8_t i=0; i<MPU6050_ACCEL_BIAS_CALC_ITERATION; i++)
+	{
+		MPU6050_GetRawAccelDatas(MPU6050, &tempDatas);
+		
+		biasDatas->xData += tempDatas.rawXData;
+		biasDatas->yData += tempDatas.rawYData;
+		biasDatas->zData += tempDatas.rawZData;
+	}
+	
+	biasDatas->xData /=  (float)MPU6050_ACCEL_BIAS_CALC_ITERATION;
+	biasDatas->yData /=  (float)MPU6050_ACCEL_BIAS_CALC_ITERATION;
+	biasDatas->zData /=  (float)MPU6050_ACCEL_BIAS_CALC_ITERATION;
+	
+	biasDatas->zData -= MPU6050_GRAVITY_ACCELERATION;
+}
 
+/**------------------------------------------------------------------------------
+  * @brief  			
+	* @note					
+	*	@param[IN]  	
+	*	@param[OUT]		
+  * @retval 		
+  *------------------------------------------------------------------------------*/
+void MPU6050_GetGyroOffsetValues(COM_Handle * MPU6050, IMU_AxisDatas * biasDatas)
+{
+	memset(biasDatas, 0x00, sizeof(IMU_AxisDatas));
+	MPU6050_RawGyroDatas tempDatas;
+	
+	for(uint8_t i=0; i<MPU6050_GYRO_BIAS_CALC_ITERATION; i++)
+	{
+		MPU6050_GetRawGyroDatas(MPU6050, &tempDatas);
+		
+		biasDatas->xData += tempDatas.rawXData;
+		biasDatas->yData += tempDatas.rawYData;
+		biasDatas->zData += tempDatas.rawZData;
+	}
+	
+	biasDatas->xData /=  (float)MPU6050_GYRO_BIAS_CALC_ITERATION;
+	biasDatas->yData /=  (float)MPU6050_GYRO_BIAS_CALC_ITERATION;
+	biasDatas->zData /=  (float)MPU6050_GYRO_BIAS_CALC_ITERATION;
+}
 
+/**------------------------------------------------------------------------------
+  * @brief  			
+	* @note					
+	*	@param[IN]  	
+	*	@param[OUT]		
+  * @retval 		
+  *------------------------------------------------------------------------------*/
+void MPU6050_GetAccelAngle(COM_Handle * MPU6050, const IMU_AxisDatas * axisBias, IMU_AxisAngles * axisAngle)
+{
+	IMU_AxisDatas 					axisData = {0};
+	MPU6050_RawAccelDatas 	mpu6050TempAccelAxis={0};
+	
+	
+	MPU6050_GetRawAccelDatas(MPU6050, &mpu6050TempAccelAxis);
+	
+	axisData.xData = mpu6050TempAccelAxis.rawXData;
+	axisData.yData = mpu6050TempAccelAxis.rawYData;
+	axisData.zData = mpu6050TempAccelAxis.rawZData;
+	
+	IMU_RemoveBias(&axisData, axisBias);
+	
+	IMU_GetAngleFromAccelerometer(&axisData, axisAngle);
+}
+
+/**------------------------------------------------------------------------------
+  * @brief  			
+	* @note					
+	*	@param[IN]  	
+	*	@param[OUT]		
+  * @retval 		
+  *------------------------------------------------------------------------------*/
+void MPU6050_GetGyroAngle(COM_Handle * MPU6050, const IMU_AxisDatas * axisBias, IMU_AxisAngles * currAxisAngle, IMU_AxisAngles * prevAxisAngle)
+{
+	IMU_AxisDatas 				axisData = {0};
+	MPU6050_RawGyroDatas 	mpu6050TempGyroData={0};
+	
+	MPU6050_GetRawGyroDatas(MPU6050, &mpu6050TempGyroData);
+	
+	axisData.xData = mpu6050TempGyroData.rawXData;
+	axisData.yData = mpu6050TempGyroData.rawYData;
+	axisData.zData = mpu6050TempGyroData.rawZData;
+	
+	IMU_RemoveBias(&axisData, axisBias);
+	
+	IMU_GetAngleFromGyro(&axisData, currAxisAngle, prevAxisAngle, Ts_PERIOD);
+}

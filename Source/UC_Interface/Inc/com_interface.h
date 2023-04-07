@@ -53,7 +53,7 @@ typedef struct
 	uint16_t  				    memAddSize;
 	uint8_t   				    data[COM_MAX_BYTE_CNT];
 	uint16_t  				    dataSize;
-
+	
 }COM_I2CData;
 
 typedef union

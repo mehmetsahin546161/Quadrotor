@@ -35,5 +35,6 @@
   Source\Common\Inc\defines.h Source\UC_Interface\Inc\com_interface.h \
   RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\main.h \
   C:\Users\3060\AppData\Local\Arm\Packs\ARM\CMSIS\5.9.0\CMSIS\RTOS2\Include\cmsis_os2.h \
-  Source\Common\Inc\calc.h \
-  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\inttypes.h
+  Source\Sensors\Inc\imu.h Source\Common\Inc\calc.h \
+  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\inttypes.h \
+  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\string.h

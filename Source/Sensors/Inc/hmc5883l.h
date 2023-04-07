@@ -2,8 +2,9 @@
 #define _HMC5883L_H_
 
 /* Includes ------------------------------------------------------------------*/
-#include "stdint.h"
-#include "com_interface.h"
+#include 	"stdint.h"
+#include 	"com_interface.h"
+#include	"imu.h"
 
 /* Exported constants --------------------------------------------------------*/
 #define 	HMC5883L_CONFIG_REGISTER_A_ADDR						0x00
