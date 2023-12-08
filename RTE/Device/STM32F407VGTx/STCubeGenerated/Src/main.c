@@ -31,14 +31,9 @@
 	#include "EventRecorder.h"            
 #endif  
   
-
 #include "cmsis_os2.h"
+#include "ahrs.h"
 #include "com_interface.h"
-#include "adxl345.h"
-#include "itg3205.h"
-#include "hmc5883l.h"
-#include "imu.h"
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -79,17 +74,17 @@ void app_main (void* arg);
   */
 uint32_t HAL_GetTick (void)
 {
- static uint32_t ticks = 0U;
- uint32_t i;
+	static uint32_t ticks = 0U;
+	uint32_t i;
 	
- if (osKernelGetState () == osKernelRunning)
+	if(osKernelGetState() == osKernelRunning)
 	{
-   return ((uint32_t)osKernelGetTickCount ());
+		return ((uint32_t)osKernelGetTickCount());
 	} 
 	
- /* If Kernel is not running wait approximately 1 ms then increment and return auxiliary tick counter value */
- for (i = (SystemCoreClock >> 14U); i > 0U; i--) { __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); }
- return ++ticks;
+	/* If Kernel is not running wait approximately 1 ms then increment and return auxiliary tick counter value */
+	for (i = (SystemCoreClock >> 14U); i > 0U; i--) { __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); }
+	return ++ticks;
 }
 
 /* USER CODE END 0 */
@@ -200,13 +195,34 @@ void SystemClock_Config(void)
 void app_main (void* arg)
 {
 	COM_Init();
-	IMU_Init();
+	AHRS_Init();
 	
 	while(true)
 	{
 	}
 }
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM14 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM14) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.

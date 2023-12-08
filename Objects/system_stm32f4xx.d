@@ -1,5 +1,5 @@
 ./objects/system_stm32f4xx.o: RTE\Device\STM32F407VGTx\system_stm32f4xx.c \
-  RTE\_Target_1\Pre_Include_Global.h \
+  RTE\_Debug\Pre_Include_Global.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include\stm32f4xx.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include\stm32f407xx.h \
   C:\Users\3060\AppData\Local\Arm\Packs\ARM\CMSIS\5.9.0\CMSIS\Core\Include\core_cm4.h \
@@ -29,4 +29,6 @@
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_i2c_ex.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_pwr.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_pwr_ex.h \
+  C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_tim.h \
+  C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_tim_ex.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_uart.h

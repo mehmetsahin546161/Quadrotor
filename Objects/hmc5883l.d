@@ -1,7 +1,7 @@
 ./objects/hmc5883l.o: Source\Sensors\Src\hmc5883l.c \
-  RTE\_Target_1\Pre_Include_Global.h Source\Sensors\Inc\hmc5883l.h \
+  RTE\_Debug\Pre_Include_Global.h Source\Sensors\Inc\hmc5883l.h \
   C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdint.h \
-  Source\UC_Interface\Inc\com_interface.h \
+  Source\ComInterface\Inc\com_interface.h \
   RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\main.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal.h \
   RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\stm32f4xx_hal_conf.h \

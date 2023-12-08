@@ -1,6 +1,6 @@
 ./objects/stm32f4xx_it.o: \
   RTE\Device\STM32F407VGTx\STCubeGenerated\Src\stm32f4xx_it.c \
-  RTE\_Target_1\Pre_Include_Global.h \
+  RTE\_Debug\Pre_Include_Global.h \
   RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\main.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal.h \
   RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\stm32f4xx_hal_conf.h \
@@ -31,6 +31,8 @@
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_i2c_ex.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_pwr.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_pwr_ex.h \
+  C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_tim.h \
+  C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_tim_ex.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_uart.h \
   C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdbool.h \
   RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\stm32f4xx_it.h
