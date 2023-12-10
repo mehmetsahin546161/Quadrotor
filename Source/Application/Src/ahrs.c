@@ -13,16 +13,77 @@
 /* Private define ------------------------------------------------------------*/
 #define MAGNETIC_DECLINATION					(5.53f) 			/* In Istanbul */
 
+#define EVT_FLAG_IMU_READING						(1<<0)
+#define EVT_FLAG_BIAS_CALC_FINISHED			(1<<1)
+#define EVT_FLAG_BIAS_CALC_STARTED			(1<<2)
+
+#define IMU_SENSOR_SETTLING_TIME				(5000)				/* ms */
+
 /* Private macro -------------------------------------------------------------*/
+
 /* Private typedef -----------------------------------------------------------*/
 
 /* Private function prototypes -----------------------------------------------*/
+static void AHRS_IMU_ThreadFunc(void* arg);
+static void AHRS_IMU_BiasCalcThreadFunc(void* arg);
+static void AHRS_IMU_PeriodicTimerFunc(void* arg);
+static void AHRS_IMU_BiasCalcStartedTimerFunc(void* arg);
 
 /* Private variables ---------------------------------------------------------*/
 
 /* Exported variables --------------------------------------------------------*/
 
 /* Exported functions --------------------------------------------------------*/
+
+void AHRS_Init(AHRS_Handle * AHRS)
+{
+	/* Create OS resources */
+	AHRS->osResource.EVT_IMU_Reading 					= osEventFlagsNew(NULL);
+	AHRS->osResource.TIM_IMU_Reading 					= osTimerNew(AHRS_IMU_PeriodicTimerFunc, osTimerPeriodic, AHRS, NULL);
+	AHRS->osResource.TIM_IMU_BiasCalcFinished = osTimerNew(AHRS_IMU_BiasCalcStartedTimerFunc, osTimerOnce, AHRS, NULL);
+	AHRS->osResource.TID_IMU_Reading 					= osThreadNew(AHRS_IMU_ThreadFunc, AHRS, NULL);
+	AHRS->osResource.TID_IMU_BiasCalc 				= osThreadNew(AHRS_IMU_BiasCalcThreadFunc, AHRS, NULL);
+	
+	AHRS_Enable(AHRS);
+	
+	/* Wait for steady state */
+	osDelay(IMU_SENSOR_SETTLING_TIME*2);
+}
+
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void AHRS_Enable(AHRS_Handle * AHRS)
+{
+	AHRS->enabled = true;
+	osTimerStart(AHRS->osResource.TIM_IMU_Reading, (uint32_t)SEC_TO_MS(AHRS->samplingTime));
+}
+
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void AHRS_Disable(AHRS_Handle * AHRS)
+{
+	osTimerStop(AHRS->osResource.TIM_IMU_Reading);
+	AHRS->enabled = false;
+}
+
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void AHRS_RemoveBiasAngle(AHRS_Handle * AHRS)
+{
+	AHRS->eulerAngles.yaw -= AHRS->biasEulerAngles.yaw;
+}
 
 /**--------------------------------------------------------------------------------------------------------------------------------------------------------------
   * @brief  		None
@@ -188,10 +249,10 @@ void AHRS_GetMadgwickQuaternion(const AHRS_AxisData * accelData, const AHRS_Axis
 	qDot4 = 0.5f * (q1 * gz + q2 * gy - q3 * gx) - beta * s4;
 	
 	/* Integrate to yield quaternion */
-	q1 += qDot1 * IMU_READING_PERIODE;
-	q2 += qDot2 * IMU_READING_PERIODE;
-	q3 += qDot3 * IMU_READING_PERIODE;
-	q4 += qDot4 * IMU_READING_PERIODE;
+	q1 += qDot1 * IMU_READING_PERIOD;
+	q2 += qDot2 * IMU_READING_PERIOD;
+	q3 += qDot3 * IMU_READING_PERIOD;
+	q4 += qDot4 * IMU_READING_PERIOD;
 	norm = sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);    // Normalise quaternion
 	norm = 1.0f/norm;
 	
@@ -223,16 +284,16 @@ void AHRS_QuaternionToEulerAngles(const AHRS_Quaternions * quaternions, AHRS_Eul
 
 	/* Roll angle calculation */
 	eulerAngles->roll  = atan2f(a31, a33);
-	eulerAngles->roll = RADIAN_TO_DEGREE(eulerAngles->roll);
+	//eulerAngles->roll = RADIAN_TO_DEGREE(eulerAngles->roll);
 	
 	/* Pitch angle calculation */
 	eulerAngles->pitch = -asinf(a32);
-	eulerAngles->pitch = RADIAN_TO_DEGREE(eulerAngles->pitch);
+	//eulerAngles->pitch = RADIAN_TO_DEGREE(eulerAngles->pitch);
 	
 	/* Yaw angle calculation */
 	eulerAngles->yaw = atan2f(a12, a22);
-	eulerAngles->yaw = RADIAN_TO_DEGREE(eulerAngles->yaw);
-	eulerAngles->yaw += MAGNETIC_DECLINATION;
+	//eulerAngles->yaw = RADIAN_TO_DEGREE(eulerAngles->yaw);
+	//eulerAngles->yaw += MAGNETIC_DECLINATION;
 
 //	/* Ensure yaw stays between 0 and 360. */
 //	if(eulerAngles->yaw < 0)
@@ -242,3 +303,83 @@ void AHRS_QuaternionToEulerAngles(const AHRS_Quaternions * quaternions, AHRS_Eul
 
 /* Private functions ---------------------------------------------------------*/
 
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+static void AHRS_IMU_ThreadFunc(void* arg)
+{
+	AHRS_Handle * AHRS = (AHRS_Handle *)arg;
+	
+	/* Wait untill bias calculation is performed */
+	osEventFlagsWait(AHRS->osResource.EVT_IMU_Reading, EVT_FLAG_BIAS_CALC_FINISHED, osFlagsWaitAny, osWaitForever);
+	
+	while(true)
+	{
+		osEventFlagsWait(AHRS->osResource.EVT_IMU_Reading, EVT_FLAG_IMU_READING, osFlagsWaitAny, osWaitForever);
+		
+		AHRS_GetEulerAngles(&(AHRS->eulerAngles), &(AHRS->quaternions));
+		AHRS_RemoveBiasAngle(AHRS);
+		AHRS_GetEulerAnglesRate(&(AHRS->eulerAngles), &(AHRS->prevEulerAngles), &(AHRS->eulerAnglesRate), IMU_READING_PERIOD);
+		AHRS_GetBodyRateFromEulerAnglesRate(&(AHRS->eulerAnglesRate), &(AHRS->eulerAngles), &(AHRS->bodyRate));
+	}
+}
+
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+static void AHRS_IMU_BiasCalcThreadFunc(void* arg)
+{
+	AHRS_Handle * AHRS = (AHRS_Handle *)arg;
+	uint32_t evtFlags = 0;
+	
+	osTimerStart(AHRS->osResource.TIM_IMU_BiasCalcFinished, IMU_SENSOR_SETTLING_TIME);
+	
+	while(true)
+	{
+		evtFlags = osEventFlagsWait(AHRS->osResource.EVT_IMU_Reading, EVT_FLAG_IMU_READING|EVT_FLAG_BIAS_CALC_STARTED, osFlagsWaitAny, osWaitForever);
+		
+		if(evtFlags & EVT_FLAG_IMU_READING)
+		{
+			AHRS_GetEulerAngles(&(AHRS->biasEulerAngles), &(AHRS->biasQuaternions));
+		}
+		else
+		{
+			osEventFlagsSet(AHRS->osResource.EVT_IMU_Reading, EVT_FLAG_BIAS_CALC_FINISHED);
+			break;
+		}
+	}
+
+	osThreadTerminate(AHRS->osResource.TID_IMU_BiasCalc); 
+}
+
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+static void AHRS_IMU_PeriodicTimerFunc(void* arg)
+{
+	AHRS_Handle * AHRS = (AHRS_Handle *)arg;
+	
+	osEventFlagsSet(AHRS->osResource.EVT_IMU_Reading, EVT_FLAG_IMU_READING);
+}
+
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+static void AHRS_IMU_BiasCalcStartedTimerFunc(void* arg)
+{
+	AHRS_Handle * AHRS = (AHRS_Handle *)arg;
+	
+	osEventFlagsSet(AHRS->osResource.EVT_IMU_Reading, EVT_FLAG_BIAS_CALC_STARTED);
+}

@@ -9,6 +9,9 @@
 /* Exported define -----------------------------------------------------------*/
 #define MAX_STATE_COUNT			15
 #define MAX_INPUT_COUNT			5
+	
+#define DISC_CTRL_FREQ			(20.0)									/* Hz */
+#define DISC_CTRL_PERIOD		(1/DISC_CTRL_FREQ)			/* Sec */
 
 
 /* Exported macro ------------------------------------------------------------*/
@@ -57,7 +60,7 @@ typedef struct
 /* Exported variables --------------------------------------------------------*/
 
 /* Exported functions --------------------------------------------------------*/
-void PolePlc_CreateController(PolePlacement_Handle * controller);
+void PolePlc_Init(PolePlacement_Handle * controller);
 void PolePlc_EnableController(PolePlacement_Handle * controller);
 void PolePlc_DisableController(PolePlacement_Handle * controller);
 bool PolePlc_IsControllerEnabled(PolePlacement_Handle * controller);

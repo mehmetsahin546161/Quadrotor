@@ -20,17 +20,44 @@ BMX160_Handle BMX160 =
 
 AHRS_Handle	AHRS = 
 {
-	.quaternions.q1 = 1
+	.samplingTime = IMU_READING_PERIOD,
+	.quaternions.q1 = 1,
+	.biasQuaternions.q1 = 1,
 };
 
 PolePlacement_Handle PolePlacement = 
 {
-	.samplingTime = IMU_READING_PERIODE,
+	.samplingTime = DISC_CTRL_PERIOD,
 	.inputCnt = 3,
 	.stateCnt = 6,
 	
 	.stateVector[0] = &(AHRS.eulerAngles.roll),
-
+	.stateVector[1] = &(AHRS.eulerAngles.pitch),
+	.stateVector[2] = &(AHRS.eulerAngles.yaw),
+	.stateVector[3] = &(AHRS.bodyRate.p),
+	.stateVector[4] = &(AHRS.bodyRate.q),
+	.stateVector[5] = &(AHRS.bodyRate.r),
+	
+	.K[0][0] = 0.1816,
+	.K[0][1] = 0,
+	.K[0][2] = 0,
+	.K[0][3] = 0.0999,
+	.K[0][4] = 0,
+	.K[0][5] = 0,
+	
+	.K[1][0] = 0,
+	.K[1][1] = 9.0733,
+	.K[1][2] = 0,
+	.K[1][3] = 0,
+	.K[1][4] = 0.9503,
+	.K[1][5] = 0,
+	
+	.K[2][0] = 0,
+	.K[2][1] = 0,
+	.K[2][2] = 18.1412,
+	.K[2][3] = 0,
+	.K[2][4] = 0,
+	.K[2][5] = 1.9008,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -49,8 +76,9 @@ void APP_Main(void* arg)
 {
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_SET);
 	
-	BMX160_CreateSensor(&BMX160);
-	PolePlc_CreateController(&PolePlacement);
+	BMX160_Init(&BMX160);
+	AHRS_Init(&AHRS);
+	PolePlc_Init(&PolePlacement);
 	
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
 	

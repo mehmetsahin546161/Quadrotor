@@ -28,7 +28,7 @@ static void BMX160_SetMagnetoManualConfig(I2C_HandleTypeDef *	i2c, uint8_t addrT
   * @param[OUT]	None
   * @retval 		None
   *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-void BMX160_CreateSensor(BMX160_Handle * BMX160)
+void BMX160_Init(BMX160_Handle * BMX160)
 {
 	uint8_t writenData = 0;
 	

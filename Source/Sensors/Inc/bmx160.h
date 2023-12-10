@@ -163,7 +163,7 @@ typedef struct
 /* Exported variables --------------------------------------------------------*/
 
 /* Exported functions prototypes ---------------------------------------------*/
-void BMX160_CreateSensor(BMX160_Handle * BMX160);
+void BMX160_Init(BMX160_Handle * BMX160);
 void BMX160_GetRawData(BMX160_Handle * BMX160);
 
 #endif /* _BMX_160_H_ */

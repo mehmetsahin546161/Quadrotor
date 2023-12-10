@@ -2,10 +2,12 @@
 #define _AHRS_H_
 
 /* Includes ------------------------------------------------------------------*/
+#include "cmsis_os2.h"
+#include "stdbool.h"
 
 /* Exported define -----------------------------------------------------------*/
-#define	IMU_READING_FREQ					(20.0)										/* Hz */
-#define IMU_READING_PERIODE				(1/IMU_READING_FREQ)			/* Sec */
+#define	IMU_READING_FREQ					(30.0)										/* Hz */
+#define IMU_READING_PERIOD				(1/IMU_READING_FREQ)			/* Sec */
 
 #define GRAVITY_ACCELERATION_G						1								/* g */
 #define GRAVITY_ACCELERATION_M_S2					(9.81)					/* s/s^2 */
@@ -13,6 +15,16 @@
 /* Exported macro ------------------------------------------------------------*/
 
 /* Exported types ------------------------------------------------------------*/
+
+typedef struct
+{
+	osThreadId_t 			TID_IMU_Reading;
+	osThreadId_t 			TID_IMU_BiasCalc;
+	osTimerId_t 			TIM_IMU_Reading;
+	osTimerId_t 			TIM_IMU_BiasCalcFinished;
+	osEventFlagsId_t 	EVT_IMU_Reading;
+
+}AHRS_OS_Resource;
 
 typedef struct
 {
@@ -57,6 +69,9 @@ typedef struct
 
 typedef struct
 {
+	bool 	enabled;
+	float samplingTime;	//Second
+	
 	/* Raw IMU Data */
 	AHRS_AxisData accelData;
 	AHRS_AxisData gyroData;
@@ -71,7 +86,10 @@ typedef struct
 	AHRS_BodyRate					bodyRate;
 	
 	/* Bias angles */
-	AHRS_EulerAngles biasAngle;
+	AHRS_EulerAngles 	biasEulerAngles;
+	AHRS_Quaternions	biasQuaternions;
+	
+	AHRS_OS_Resource osResource;
 	
 }AHRS_Handle;
 
@@ -79,6 +97,10 @@ typedef struct
 
 /* Exported functions --------------------------------------------------------*/
 
+void AHRS_Init(AHRS_Handle * AHRS);
+void AHRS_Enable(AHRS_Handle * AHRS);
+void AHRS_Disable(AHRS_Handle * AHRS);
+void AHRS_RemoveBiasAngle(AHRS_Handle * AHRS);
 void AHRS_GetEulerAngles(AHRS_EulerAngles * eulerAngles, AHRS_Quaternions * quaternions);
 void AHRS_GetMadgwickQuaternion(const AHRS_AxisData * accelData, const AHRS_AxisData * gyroData, const AHRS_AxisData * magnetoData, AHRS_Quaternions * quaternions);
 void AHRS_QuaternionToEulerAngles(const AHRS_Quaternions * quaternions, AHRS_EulerAngles * eulerAngles);
