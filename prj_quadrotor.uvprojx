@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>.\Source\Common\Inc;.\Source\Sensors\Inc;.\Source\DigitalInput\Inc;.\Source\AnalogInput\Inc;.\Source\KalmanFilter\Inc;.\Source\ComInterface\Inc</IncludePath>
+              <IncludePath>.\Source\Common\Inc;.\Source\Sensors\Inc;.\Source\Application\Inc;.\Source\SignalProcessing\Inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -380,6 +380,41 @@
         </TargetArmAds>
       </TargetOption>
       <Groups>
+        <Group>
+          <GroupName>Common</GroupName>
+          <Files>
+            <File>
+              <FileName>defines.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Source\Common\Inc\defines.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Sensors</GroupName>
+          <Files>
+            <File>
+              <FileName>bmx160.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\Sensors\Src\bmx160.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Signal Processing</GroupName>
+          <Files>
+            <File>
+              <FileName>calc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\SignalProcessing\Src\calc.c</FilePath>
+            </File>
+            <File>
+              <FileName>pole_placement.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\SignalProcessing\Src\pole_placement.c</FilePath>
+            </File>
+          </Files>
+        </Group>
         <Group>
           <GroupName>:STM32CubeMX:Common Sources</GroupName>
           <Files>
@@ -426,72 +461,17 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>Sensors</GroupName>
+          <GroupName>Application</GroupName>
           <Files>
+            <File>
+              <FileName>app_main.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\Application\Src\app_main.c</FilePath>
+            </File>
             <File>
               <FileName>ahrs.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Source\Sensors\Src\ahrs.c</FilePath>
-            </File>
-            <File>
-              <FileName>bmx160.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\Sensors\Src\bmx160.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>Common</GroupName>
-          <Files>
-            <File>
-              <FileName>defines.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Source\Common\Inc\defines.h</FilePath>
-            </File>
-            <File>
-              <FileName>calc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\Common\Src\calc.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>DigitalInput</GroupName>
-          <Files>
-            <File>
-              <FileName>digital_input.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\DigitalInput\Src\digital_input.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>AnalogInput</GroupName>
-          <Files>
-            <File>
-              <FileName>analog_input.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\AnalogInput\Src\analog_input.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>Kalman Filter</GroupName>
-          <Files>
-            <File>
-              <FileName>kalman_filter.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\KalmanFilter\Src\kalman_filter.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>ComInterface</GroupName>
-          <Files>
-            <File>
-              <FileName>com_interface.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\ComInterface\Src\com_interface.c</FilePath>
+              <FilePath>.\Source\Application\Src\ahrs.c</FilePath>
             </File>
           </Files>
         </Group>

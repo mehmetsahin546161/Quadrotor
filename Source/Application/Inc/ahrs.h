@@ -16,34 +16,42 @@
 
 typedef struct
 {
-	double xData;
-	double yData;
-	double zData;
+	float xData;
+	float yData;
+	float zData;
 
 }AHRS_AxisData;
 
 typedef struct
 {
-	double p;
-	double q;
-	double r;
+	float p;
+	float q;
+	float r;
 
 }AHRS_BodyRate;
 
 typedef struct
 {
-	double roll;
-	double pitch;
-	double yaw;
+	float roll;
+	float pitch;
+	float yaw;
 
 }AHRS_EulerAngles;
 
 typedef struct
 {
-	double q1;
-	double q2;
-	double q3;
-	double q4;
+	float rollRate;
+	float pitchRate;
+	float yawRate;
+
+}AHRS_EulerAnglesRate;
+
+typedef struct
+{
+	float q1;
+	float q2;
+	float q3;
+	float q4;
 
 }AHRS_Quaternions;
 
@@ -58,6 +66,10 @@ typedef struct
 	AHRS_EulerAngles 	eulerAngles;
 	AHRS_Quaternions	quaternions;
 	
+	AHRS_EulerAnglesRate	eulerAnglesRate;
+	AHRS_EulerAngles			prevEulerAngles;
+	AHRS_BodyRate					bodyRate;
+	
 	/* Bias angles */
 	AHRS_EulerAngles biasAngle;
 	
@@ -67,10 +79,10 @@ typedef struct
 
 /* Exported functions --------------------------------------------------------*/
 
-void AHRS_Init(void);
-void AHRS_GetMadgwickQuaternion(const AHRS_AxisData * accelData, const AHRS_AxisData * gyroData, const AHRS_AxisData * magData, AHRS_Quaternions * quaternions);
+void AHRS_GetEulerAngles(AHRS_EulerAngles * eulerAngles, AHRS_Quaternions * quaternions);
+void AHRS_GetMadgwickQuaternion(const AHRS_AxisData * accelData, const AHRS_AxisData * gyroData, const AHRS_AxisData * magnetoData, AHRS_Quaternions * quaternions);
 void AHRS_QuaternionToEulerAngles(const AHRS_Quaternions * quaternions, AHRS_EulerAngles * eulerAngles);
-//void AHRS_GetEulerAngles(IMU_AxisDatas * accelData, IMU_AxisDatas * magnetoData, IMU_EulerAngles * eulerAngles);
-//void IMU_GetAngleFromGyro(IMU_AxisDatas * rawDatas, IMU_Angles * currAngles, IMU_Angles * prevSumAngles, float periode);
+void AHRS_GetEulerAnglesRate(AHRS_EulerAngles * curentEulerAngles, AHRS_EulerAngles	* prevEulerAngles, AHRS_EulerAnglesRate *	eulerAnglesRate, float samplimgTime);
+void AHRS_GetBodyRateFromEulerAnglesRate(AHRS_EulerAnglesRate	* eulerAnglesRate, AHRS_EulerAngles * eulerAngles, AHRS_BodyRate * bodyRate);
 
 #endif /* _AHRS_H_ */

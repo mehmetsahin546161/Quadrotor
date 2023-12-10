@@ -42,6 +42,11 @@ void MX_I2C1_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
+void I2C_WaitSending(I2C_HandleTypeDef* i2cHandle);
+void I2C_WaitReceiving(I2C_HandleTypeDef* i2cHandle);
+void I2C_AsyncMemWrite(I2C_HandleTypeDef * i2cHandle, uint16_t devAddress, uint16_t memAddress, uint16_t memAddSize, uint8_t * data, uint16_t size);
+void I2C_AsyncMemRead(I2C_HandleTypeDef * i2cHandle, uint16_t devAddress, uint16_t memAddress, uint16_t memAddSize, uint8_t * data, uint16_t size);
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

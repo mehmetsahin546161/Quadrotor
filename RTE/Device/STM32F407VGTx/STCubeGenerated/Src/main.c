@@ -32,8 +32,7 @@
 #endif  
   
 #include "cmsis_os2.h"
-#include "ahrs.h"
-#include "com_interface.h"
+#include "app_main.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,7 +60,7 @@ extern UART_HandleTypeDef 	huart2;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-void app_main (void* arg);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -83,7 +82,9 @@ uint32_t HAL_GetTick (void)
 	} 
 	
 	/* If Kernel is not running wait approximately 1 ms then increment and return auxiliary tick counter value */
-	for (i = (SystemCoreClock >> 14U); i > 0U; i--) { __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); }
+	for(i = (SystemCoreClock >> 14U); i > 0U; i--)
+	{ __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); }
+	
 	return ++ticks;
 }
 
@@ -127,7 +128,7 @@ int main(void)
   
 	SystemCoreClockUpdate();
   osKernelInitialize();                 // Initialize CMSIS-RTOS
-  osThreadNew(app_main, NULL, NULL);    // Create application main thread
+  osThreadNew(APP_Main, NULL, NULL);    // Create application main thread
   osKernelStart();   
   
   /* USER CODE END 2 */
@@ -186,21 +187,6 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
-
-/**
-  * @brief	
-  * @param[IN] 
-  * @retval 	
-  */
-void app_main (void* arg)
-{
-	COM_Init();
-	AHRS_Init();
-	
-	while(true)
-	{
-	}
-}
 /* USER CODE END 4 */
 
 /**
@@ -216,7 +202,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 0 */
 
   /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM14) {
+  if(htim->Instance == TIM14)
+	{
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */

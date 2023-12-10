@@ -2,13 +2,14 @@
 #define _BMX_160_H_
 
 /* Includes ------------------------------------------------------------------*/
-#include "com_interface.h"
 #include "ahrs.h"
-#include "kalman_filter.h"
+#include "stdint.h"
+#include "stdbool.h"
+#include "i2c.h"
 
 /* Exported define -----------------------------------------------------------*/
-#define 	BMX160_I2C_DEV_ADDR_GND  				0x68
-#define 	BMX160_I2C_DEV_ADDR_VCC  				0x69
+#define BMX160_I2C_DEV_ADDR_GND  						0x68
+#define BMX160_I2C_DEV_ADDR_VCC  						0x69
 
 #define BMX160_DATA_0_ADDR										0x04
 #define BMX160_DATA_1_ADDR										0x05
@@ -150,7 +151,7 @@ typedef struct
 
 typedef struct
 {
-	COM_Handle 	comHandle;
+	I2C_HandleTypeDef *	i2c;
 	
 	/* Raw Data */
 	BMX160_RawData 		rawAccel;				/* Linear acceleration(m/s^2) */		
@@ -160,20 +161,9 @@ typedef struct
 }BMX160_Handle;
 
 /* Exported variables --------------------------------------------------------*/
-/* Exported functions prototypes ---------------------------------------------*/
-void BMX160_InitSensor(BMX160_Handle * BMX160);
-void BMX160_InitMagneto(COM_Handle * BMX160_Com);
 
-void BMX160_SetMagnetoConfig(COM_Handle * BMX160_Com, BMX160_MagnetoConfigReg * magnetoConfig);
-void BMX160_SetCMD(COM_Handle * BMX160_Com, uint8_t data);
-void BMX160_SetMagIF0(COM_Handle * BMX160_Com, BMX160_MagIf0Reg * magIfReg);
-void BMX160_SetMagIF1(COM_Handle * BMX160_Com, uint8_t addrToRead);
-void BMX160_SetMagIF2(COM_Handle * BMX160_Com, uint8_t addrToWrite);
-void BMX160_SetMagIF3(COM_Handle * BMX160_Com, uint8_t dataToWrite);
-void BMX160_SetMagnetoManualConfig(COM_Handle * BMX160_Com, uint8_t addrToWrite, BMX160_MagnetoManualCmds manualCmd);
-uint8_t BMX160_GetMagnetoManualConfig(COM_Handle * BMX160_Comv, uint8_t addrToRead);
+/* Exported functions prototypes ---------------------------------------------*/
+void BMX160_CreateSensor(BMX160_Handle * BMX160);
 void BMX160_GetRawData(BMX160_Handle * BMX160);
-void BMX160_GetAngle(BMX160_Handle * BMX160);
-//void BMX160_CalculateBias(BMX160_Handle * BMX160);
-//void BMX160_RemoveBias(BMX160_Handle * BMX160);
+
 #endif /* _BMX_160_H_ */

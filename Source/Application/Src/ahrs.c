@@ -6,77 +6,84 @@
 #include "defines.h"
 #include "ahrs.h"
 #include "calc.h"
-#include "mpu9250.h"
 #include "cmsis_os2.h"
 #include "bmx160.h"
+#include "app_main.h"
 
 /* Private define ------------------------------------------------------------*/
-#define IMU_PERIODIC_READ_FLAG				(1<<0)
 #define MAGNETIC_DECLINATION					(5.53f) 			/* In Istanbul */
 
 /* Private macro -------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
 
 /* Private function prototypes -----------------------------------------------*/
-static void AHRS_IMU_ReadingThread(void *arg);				
-static void AHRS_IMU_ReadingTimCallback(void *arg);
 
 /* Private variables ---------------------------------------------------------*/
-static osThreadId_t	TID_IMU_Reading;
-static osTimerId_t 	TIM_IMU_Reading;
-static osEventFlagsId_t EVT_IMU;
-
-const osThreadAttr_t IMU_ReadingThreadAttr =
-{
-	.name = "IMU_Reading_Thread",
-	.priority = osPriorityNormal1
-};
-
-const osTimerAttr_t IMU_ReadingTimerAttr = 
-{
-	.name = "IMU_Reading_Timer"
-};
-
-const osEventFlagsAttr_t IMU_ThreadFlagAttr = 
-{
-	.name = "IMU_Thread_Flag"
-};
 
 /* Exported variables --------------------------------------------------------*/
-extern I2C_HandleTypeDef 		hi2c1;
-AHRS_Handle	AHRS;
-BMX160_Handle BMX160;
 
 /* Exported functions --------------------------------------------------------*/
 
-/**------------------------------------------------------------------------------
-  * @brief  			
-	*	@param[IN]  	
-	*	@param[OUT]		
-  * @retval 		
-  *------------------------------------------------------------------------------*/
-void AHRS_Init(void)
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void AHRS_GetEulerAngles(AHRS_EulerAngles * eulerAngles, AHRS_Quaternions * quaternions)
 {
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_SET);
+	AHRS_AxisData accelData, gyroData, magData;
 	
-	/* Init IMU Sensors */
-	BMX160_InitSensor(&BMX160);
+	BMX160_GetRawData(&BMX160);
+		
+	accelData.xData = BMX160.rawAccel.rawXData;
+	accelData.yData = BMX160.rawAccel.rawYData;
+	accelData.zData = BMX160.rawAccel.rawZData;
 	
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
+	gyroData.xData = BMX160.rawGyro.rawXData;
+	gyroData.yData = BMX160.rawGyro.rawYData;
+	gyroData.zData = BMX160.rawGyro.rawZData;
 	
-	EVT_IMU = osEventFlagsNew(&IMU_ThreadFlagAttr);
-	TIM_IMU_Reading = osTimerNew(AHRS_IMU_ReadingTimCallback, osTimerPeriodic, NULL, &IMU_ReadingTimerAttr);
-	TID_IMU_Reading = osThreadNew(AHRS_IMU_ReadingThread, NULL, &IMU_ReadingThreadAttr);
+	magData.xData = BMX160.rawMag.rawXData;
+	magData.yData = BMX160.rawMag.rawYData;
+	magData.zData = BMX160.rawMag.rawZData;
 	
-	osTimerStart(TIM_IMU_Reading, SEC_TO_MS(IMU_READING_PERIODE));
+	AHRS_GetMadgwickQuaternion(&accelData, &gyroData, &magData, quaternions);
+	AHRS_QuaternionToEulerAngles(quaternions, eulerAngles);
 }
 
-/**------------------------------------------------------------------------------
-  * @brief  			
-	*	@param[IN]  	
-	*	@param[OUT]		
-  * @retval 		
-  *------------------------------------------------------------------------------*/
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void AHRS_GetEulerAnglesRate(AHRS_EulerAngles * curentEulerAngles, AHRS_EulerAngles	* prevEulerAngles, AHRS_EulerAnglesRate *	eulerAnglesRate, float samplimgTime)
+{
+	eulerAnglesRate->rollRate 	= Calc_GetDiscreteDerivative(curentEulerAngles->roll, &(prevEulerAngles->roll), samplimgTime);
+	eulerAnglesRate->pitchRate 	= Calc_GetDiscreteDerivative(curentEulerAngles->pitch, &(prevEulerAngles->pitch), samplimgTime);
+	eulerAnglesRate->yawRate 		= Calc_GetDiscreteDerivative(curentEulerAngles->yaw, &(prevEulerAngles->yaw), samplimgTime);
+}
+
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void AHRS_GetBodyRateFromEulerAnglesRate(AHRS_EulerAnglesRate	* eulerAnglesRate, AHRS_EulerAngles * eulerAngles, AHRS_BodyRate * bodyRate)
+{
+	bodyRate->p = (eulerAnglesRate->rollRate)*(1) + (eulerAnglesRate->pitchRate)*(0) 												+ (eulerAnglesRate->yawRate)*(-sinf(eulerAngles->pitch));
+	bodyRate->q = (eulerAnglesRate->rollRate)*(0) + (eulerAnglesRate->pitchRate)*(cosf(eulerAngles->roll)) 	+ (eulerAnglesRate->yawRate)*(sinf(eulerAngles->roll)*cosf(eulerAngles->pitch));
+	bodyRate->r = (eulerAnglesRate->rollRate)*(0) + (eulerAnglesRate->pitchRate)*(-sinf(eulerAngles->roll)) + (eulerAnglesRate->yawRate)*(cosf(eulerAngles->roll)*cosf(eulerAngles->pitch));
+}
+
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 void AHRS_GetMadgwickQuaternion(const AHRS_AxisData * accelData, const AHRS_AxisData * gyroData, const AHRS_AxisData * magnetoData, AHRS_Quaternions * quaternions)
 {
 	/* Short name local variable for readability */
@@ -97,7 +104,7 @@ void AHRS_GetMadgwickQuaternion(const AHRS_AxisData * accelData, const AHRS_Axis
 	float my = magnetoData->yData;
 	float mz = magnetoData->zData;
 	
-	float beta = 0.604;//sqrt(3.0f / 4.0f) * gyroMeasError; 
+	float beta = 0.604;
 	
 	float norm;
 	float hx, hy, _2bx, _2bz;
@@ -130,7 +137,10 @@ void AHRS_GetMadgwickQuaternion(const AHRS_AxisData * accelData, const AHRS_Axis
 	
 	/* Normalise accelerometer measurement */
 	norm = sqrt(ax * ax + ay * ay + az * az);
-	if (norm == 0.0f) return; // Handle NaN
+	
+	if(norm == 0.0f)
+		return; // Handle NaN
+	
 	norm = 1.0f/norm;
 	ax *= norm;
 	ay *= norm;
@@ -138,7 +148,10 @@ void AHRS_GetMadgwickQuaternion(const AHRS_AxisData * accelData, const AHRS_Axis
 	
 	/* Normalise magnetometer measurement */
 	norm = sqrt(mx * mx + my * my + mz * mz);
-	if (norm == 0.0f) return; // Handle NaN
+	
+	if(norm == 0.0f)
+		return; // Handle NaN
+	
 	norm = 1.0f/norm;
 	mx *= norm;
 	my *= norm;
@@ -188,12 +201,12 @@ void AHRS_GetMadgwickQuaternion(const AHRS_AxisData * accelData, const AHRS_Axis
 	quaternions->q4 = q4 * norm;
 }
 
-/**------------------------------------------------------------------------------
-  * @brief  			
-	*	@param[IN]  	
-	*	@param[OUT]		
-  * @retval 		
-  *------------------------------------------------------------------------------*/
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief  		None
+  * @param[IN] 	None
+  * @param[OUT]	None
+  * @retval 		None
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 void AHRS_QuaternionToEulerAngles(const AHRS_Quaternions * quaternions, AHRS_EulerAngles * eulerAngles)
 {
 	/* Short name local variable for readability */
@@ -208,93 +221,24 @@ void AHRS_QuaternionToEulerAngles(const AHRS_Quaternions * quaternions, AHRS_Eul
 	float a32 =   2.0f * (q2 * q4 - q1 * q3);
 	float a33 =   q1 * q1 - q2 * q2 - q3 * q3 + q4 * q4;
 
-	eulerAngles->pitch = -asinf(a32);
+	/* Roll angle calculation */
 	eulerAngles->roll  = atan2f(a31, a33);
-	eulerAngles->yaw   = atan2f(a12, a22);
-	eulerAngles->pitch = RADIAN_TO_DEGREE(eulerAngles->pitch);
-	eulerAngles->yaw = RADIAN_TO_DEGREE(eulerAngles->yaw);
-	eulerAngles->yaw   += MAGNETIC_DECLINATION;
-
-	/* Ensure yaw stays between 0 and 360. */
-	if(eulerAngles->yaw < 0)
-		eulerAngles->yaw += 360.0f; 
-		
 	eulerAngles->roll = RADIAN_TO_DEGREE(eulerAngles->roll);
-}
+	
+	/* Pitch angle calculation */
+	eulerAngles->pitch = -asinf(a32);
+	eulerAngles->pitch = RADIAN_TO_DEGREE(eulerAngles->pitch);
+	
+	/* Yaw angle calculation */
+	eulerAngles->yaw = atan2f(a12, a22);
+	eulerAngles->yaw = RADIAN_TO_DEGREE(eulerAngles->yaw);
+	eulerAngles->yaw += MAGNETIC_DECLINATION;
 
-/**------------------------------------------------------------------------------
-  * @brief  			
-	*	@param[IN]  	
-	*	@param[OUT]		
-  * @retval 		
-  *------------------------------------------------------------------------------*/
-void AHRS_GetEulerAngles(AHRS_EulerAngles * eulerAngles, AHRS_Quaternions * quaternions)
-{
-	AHRS_AxisData accelData, gyroData, magData;
-	
-	BMX160_GetRawData(&BMX160);
-		
-	accelData.xData = BMX160.rawAccel.rawXData;
-	accelData.yData = BMX160.rawAccel.rawYData;
-	accelData.zData = BMX160.rawAccel.rawZData;
-	
-	gyroData.xData = BMX160.rawGyro.rawXData;
-	gyroData.yData = BMX160.rawGyro.rawYData;
-	gyroData.zData = BMX160.rawGyro.rawZData;
-	
-	magData.xData = BMX160.rawMag.rawXData;
-	magData.yData = BMX160.rawMag.rawYData;
-	magData.zData = BMX160.rawMag.rawZData;
-	
-	AHRS_GetMadgwickQuaternion(&accelData, &gyroData, &magData, quaternions);
-	AHRS_QuaternionToEulerAngles(quaternions, eulerAngles);
+//	/* Ensure yaw stays between 0 and 360. */
+//	if(eulerAngles->yaw < 0)
+//		eulerAngles->yaw += 360.0f; 
+
 }
 
 /* Private functions ---------------------------------------------------------*/
-																			
-/**------------------------------------------------------------------------------
-  * @brief  			
-	*	@param[IN]  	
-	*	@param[OUT]		
-  * @retval 		
-  *------------------------------------------------------------------------------*/
-AHRS_Quaternions 		quaternions = {.q1=1};
-AHRS_EulerAngles		eulerAngles;
 
-static void AHRS_IMU_ReadingThread(void *arg)
-{
-	while(true)
-	{
-		osEventFlagsWait(EVT_IMU, IMU_PERIODIC_READ_FLAG, osFlagsWaitAll, osWaitForever);
-		
-		AHRS_GetEulerAngles(&eulerAngles, &quaternions);
-		
-		//BMX160_GetRawData(&BMX160);
-		//
-		//accelData.xData = BMX160.rawAccel.rawXData;
-		//accelData.yData = BMX160.rawAccel.rawYData;
-		//accelData.zData = BMX160.rawAccel.rawZData;
-		// 
-		//gyroData.xData = BMX160.rawGyro.rawXData;
-		//gyroData.yData = BMX160.rawGyro.rawYData;
-		//gyroData.zData = BMX160.rawGyro.rawZData;
-		// 
-		//magData.xData = BMX160.rawMag.rawXData;
-		//magData.yData = BMX160.rawMag.rawYData;
-		//magData.zData = BMX160.rawMag.rawZData;
-		// 
-		//AHRS_GetMadgwickQuaternion(&accelData, &gyroData, &magData, &quaternions);
-		//AHRS_QuaternionToEulerAngles(&quaternions, &eulerAngles);
-	}
-}
-																			
-/**------------------------------------------------------------------------------
-  * @brief  			
-	*	@param[IN]  	
-	*	@param[OUT]		
-  * @retval 		
-  *------------------------------------------------------------------------------*/
-static void AHRS_IMU_ReadingTimCallback(void *arg)
-{
-	osEventFlagsSet(EVT_IMU, IMU_PERIODIC_READ_FLAG);
-}

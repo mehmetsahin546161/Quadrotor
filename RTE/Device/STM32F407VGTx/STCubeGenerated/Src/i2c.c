@@ -19,8 +19,19 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "i2c.h"
+#include "cmsis_os2.h"
 
 /* USER CODE BEGIN 0 */
+
+/* Private define ------------------------------------------------------------*/
+#define I2C_EVENT_FLAG_TX_COMPLETED 	(1<<0)
+#define I2C_EVENT_FLAG_RX_COMPLETED 	(1<<1)
+
+#define MAX_I2C_WAIT_DURATION					1000
+
+/* Private variables ---------------------------------------------------------*/
+osEventFlagsId_t		EVT_I2C1_TX;
+osEventFlagsId_t		EVT_I2C1_RX;
 
 /* USER CODE END 0 */
 
@@ -54,6 +65,8 @@ void MX_I2C1_Init(void)
   }
   /* USER CODE BEGIN I2C1_Init 2 */
 
+	EVT_I2C1_TX = osEventFlagsNew(NULL);
+	EVT_I2C1_RX = osEventFlagsNew(NULL);
   /* USER CODE END I2C1_Init 2 */
 
 }
@@ -164,6 +177,104 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
 }
 
 /* USER CODE BEGIN 1 */
+
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief				Memory Tx Transfer completed callback.
+	* @note					
+	*	@param[IN]  	hi2c Pointer to a I2C_HandleTypeDef structure that contains
+  * 									 the configuration information for the specified I2C.
+	*	@param[OUT]		
+  * @retval 		
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void HAL_I2C_MemTxCpltCallback(I2C_HandleTypeDef *hi2c)
+{
+	osEventFlagsId_t evtFlag = (hi2c->Instance == I2C1)?EVT_I2C1_TX:NULL;
+	
+	if(evtFlag != NULL)
+	{
+		osEventFlagsSet(evtFlag, I2C_EVENT_FLAG_TX_COMPLETED);
+	}
+	
+}
+
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief				Memory Rx Transfer completed callback.
+	* @note				
+	*	@param[IN]  	hi2c Pointer to a I2C_HandleTypeDef structure that contains
+	*										 the configuration information for the specified I2C.
+	*	@param[OUT]		
+  * @retval 		
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef * hi2c)
+{
+	osEventFlagsId_t evtFlag = (hi2c->Instance == I2C1)?EVT_I2C1_RX:NULL;
+	
+	if(evtFlag != NULL)
+	{
+		osEventFlagsSet(evtFlag, I2C_EVENT_FLAG_RX_COMPLETED);
+	}
+}
+
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief
+	* @note				
+	*	@param[IN]  	
+	*	@param[OUT]		
+  * @retval 		
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void I2C_WaitSending(I2C_HandleTypeDef* i2cHandle)
+{
+	osEventFlagsId_t evtFlag = (i2cHandle->Instance == I2C1)?EVT_I2C1_TX:NULL;
+	
+	if(evtFlag != NULL)
+	{
+		osEventFlagsWait(evtFlag, I2C_EVENT_FLAG_TX_COMPLETED, osFlagsWaitAll, MAX_I2C_WAIT_DURATION);
+	}
+	
+}
+
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief
+	* @note				
+	*	@param[IN]  	
+	*	@param[OUT]		
+  * @retval 		
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void I2C_WaitReceiving(I2C_HandleTypeDef * i2cHandle)
+{
+	osEventFlagsId_t evtFlag = (i2cHandle->Instance == I2C1)?EVT_I2C1_RX:NULL;
+
+	if(evtFlag != NULL)
+	{
+		osEventFlagsWait(evtFlag, I2C_EVENT_FLAG_RX_COMPLETED, osFlagsWaitAll, MAX_I2C_WAIT_DURATION);
+	}
+}
+
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief
+	* @note				
+	*	@param[IN]  	
+	*	@param[OUT]		
+  * @retval 		
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void I2C_AsyncMemWrite(I2C_HandleTypeDef * i2cHandle, uint16_t devAddress, uint16_t memAddress, uint16_t memAddSize, uint8_t * data, uint16_t size)
+{
+	HAL_I2C_Mem_Write_DMA(i2cHandle, devAddress<<1, memAddress, memAddSize, data, size);
+	I2C_WaitSending(i2cHandle);
+}
+
+/**--------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * @brief
+	* @note				
+	*	@param[IN]  	
+	*	@param[OUT]		
+  * @retval 		
+  *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+void I2C_AsyncMemRead(I2C_HandleTypeDef * i2cHandle, uint16_t devAddress, uint16_t memAddress, uint16_t memAddSize, uint8_t * data, uint16_t size)
+{
+	HAL_I2C_Mem_Read_DMA(i2cHandle, devAddress<<1, memAddress, memAddSize, data, size);
+	I2C_WaitReceiving(i2cHandle);
+}
 
 
 /* USER CODE END 1 */

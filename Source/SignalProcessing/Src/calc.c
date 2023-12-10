@@ -9,7 +9,7 @@
 	*	@param[OUT]		
   * @retval 		
   *------------------------------------------------------------------------------*/
-double Calc_GetDiscreteDerivative(double currVal, double * prevVal, double samplingTime)
+float Calc_GetDiscreteDerivative(float currVal, float * prevVal, float samplingTime)
 {
 	//              ----------------
 	//							|						   |
@@ -21,7 +21,7 @@ double Calc_GetDiscreteDerivative(double currVal, double * prevVal, double sampl
 	//  y[n] =	---------------
 	//					       T         
 	
-	double out = ( currVal - *prevVal)/samplingTime;
+	float out = ( currVal - *prevVal)/samplingTime;
 	*prevVal = currVal;
 	return out;
 }
@@ -32,7 +32,7 @@ double Calc_GetDiscreteDerivative(double currVal, double * prevVal, double sampl
 	*	@param[OUT]		
   * @retval 		
   *------------------------------------------------------------------------------*/
-double Calc_GetDiscreteIntegral(double currVal, double * prevSum, double samplingTime)
+float Calc_GetDiscreteIntegral(float currVal, float * prevSum, float samplingTime)
 {
 	//              --------------
 	//							|					   |
@@ -42,7 +42,7 @@ double Calc_GetDiscreteIntegral(double currVal, double * prevSum, double samplin
 	//
 	//  y[n] = y[n-1] + T*u[n]
 	
-	double out = (*prevSum) + ( samplingTime * (currVal) );
+	float out = (*prevSum) + ( samplingTime * (currVal) );
 	*prevSum = out;
 	return out;
 }

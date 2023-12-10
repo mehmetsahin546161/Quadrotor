@@ -19,8 +19,8 @@
 #define DEGREE_TO_RADIAN(X)  		(X*PI/180.0)
 
 /* Exported functions --------------------------------------------------------*/
-extern double Calc_GetDiscreteDerivative(double currVal, double * prevVal, double samplingTime);
-extern double Calc_GetDiscreteIntegral(double currVal, double * prevSum, double samplingTime);
+float Calc_GetDiscreteDerivative(float currVal, float * prevVal, float samplingTime);
+float Calc_GetDiscreteIntegral(float currVal, float * prevSum, float samplingTime);
 
 
 #endif	/* CALC_H */

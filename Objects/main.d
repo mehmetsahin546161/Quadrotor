@@ -41,4 +41,5 @@
   RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\gpio.h \
   RTE\_Debug\RTE_Components.h \
   C:\Users\3060\AppData\Local\Arm\Packs\ARM\CMSIS\5.9.0\CMSIS\RTOS2\Include\cmsis_os2.h \
-  Source\Sensors\Inc\ahrs.h Source\ComInterface\Inc\com_interface.h
+  Source\Application\Inc\app_main.h Source\Sensors\Inc\bmx160.h \
+  Source\Application\Inc\ahrs.h
