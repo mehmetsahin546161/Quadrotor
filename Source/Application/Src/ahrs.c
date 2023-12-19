@@ -1,8 +1,8 @@
 /* Includes ------------------------------------------------------------------*/
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
+#include "stdio.h"
+#include "string.h"
+#include "stdlib.h"
+#include "math.h"
 #include "defines.h"
 #include "ahrs.h"
 #include "calc.h"
@@ -322,6 +322,11 @@ static void AHRS_IMU_ThreadFunc(void* arg)
 		
 		AHRS_GetEulerAngles(&(AHRS->eulerAngles), &(AHRS->quaternions));
 		AHRS_RemoveBiasAngle(AHRS);
+		
+		AHRS->degreeEulerAngles.roll 	= RADIAN_TO_DEGREE(AHRS->eulerAngles.roll);
+		AHRS->degreeEulerAngles.pitch = RADIAN_TO_DEGREE(AHRS->eulerAngles.pitch);
+		AHRS->degreeEulerAngles.yaw 	= RADIAN_TO_DEGREE(AHRS->eulerAngles.yaw);
+		
 		AHRS_GetEulerAnglesRate(&(AHRS->eulerAngles), &(AHRS->prevEulerAngles), &(AHRS->eulerAnglesRate), IMU_READING_PERIOD);
 		AHRS_GetBodyRateFromEulerAnglesRate(&(AHRS->eulerAnglesRate), &(AHRS->eulerAngles), &(AHRS->bodyRate));
 	}

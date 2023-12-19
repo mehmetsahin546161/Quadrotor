@@ -1,6 +1,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "bmx160.h"
 #include "pole_placement.h"
+#include "tim.h"
+#include "esc.h"
 
 /* Private define ------------------------------------------------------------*/
 
@@ -74,13 +76,17 @@ PolePlacement_Handle PolePlacement =
   *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 void APP_Main(void* arg)
 {
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOD, DEBUG_LED_4_Pin|DEBUG_LED_3_Pin|DEBUG_LED_2_Pin|DEBUG_LED_1_Pin, GPIO_PIN_SET);
 	
+	ESC_CalibrateThrottle(&htim1);
 	BMX160_Init(&BMX160);
 	AHRS_Init(&AHRS);
+	
+	HAL_GPIO_WritePin(GPIOD, DEBUG_LED_4_Pin|DEBUG_LED_3_Pin|DEBUG_LED_2_Pin|DEBUG_LED_1_Pin, GPIO_PIN_RESET);
+	
 	PolePlc_Init(&PolePlacement);
 	
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
+	
 	
 	while(true)
 	{

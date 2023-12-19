@@ -57,6 +57,22 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define BLDC_PWM_1_Pin GPIO_PIN_9
+#define BLDC_PWM_1_GPIO_Port GPIOE
+#define BLDC_PWM_2_Pin GPIO_PIN_11
+#define BLDC_PWM_2_GPIO_Port GPIOE
+#define BLDC_PWM_3_Pin GPIO_PIN_13
+#define BLDC_PWM_3_GPIO_Port GPIOE
+#define BLDC_PWM_4_Pin GPIO_PIN_14
+#define BLDC_PWM_4_GPIO_Port GPIOE
+#define DEBUG_LED_4_Pin GPIO_PIN_12
+#define DEBUG_LED_4_GPIO_Port GPIOD
+#define DEBUG_LED_3_Pin GPIO_PIN_13
+#define DEBUG_LED_3_GPIO_Port GPIOD
+#define DEBUG_LED_2_Pin GPIO_PIN_14
+#define DEBUG_LED_2_GPIO_Port GPIOD
+#define DEBUG_LED_1_Pin GPIO_PIN_15
+#define DEBUG_LED_1_GPIO_Port GPIOD
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

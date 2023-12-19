@@ -1,7 +1,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "bmx160.h"
-#include <string.h>
-#include <stdlib.h>
+#include "string.h"
+#include "stdlib.h"
 #include "calc.h"
 #include "cmsis_os2.h"
 

@@ -22,14 +22,59 @@ Dialog DLL:      TCM.DLL V1.48.0.0
  
 <h2>Project:</h2>
 C:\Users\3060\Documents\MEGA\Projects\Quadrotor\Firmware\prj_quadrotor.uvprojx
-Project File Date:  12/09/2023
+Project File Date:  12/19/2023
 
 <h2>Output:</h2>
 *** Using Compiler 'V6.16', folder: 'C:\Keil_v5\ARM\ARMCLANG\Bin'
-Build target 'Debug'
+Rebuild target 'Debug'
+compiling calc.c...
+compiling esc.c...
+compiling stm32f4xx_it.c...
+compiling dma.c...
+compiling main.c...
+compiling bmx160.c...
+compiling gpio.c...
+compiling tim.c...
+compiling pole_placement.c...
+compiling usart.c...
+compiling rtx_delay.c...
+assembling irq_armv7m.S...
 compiling app_main.c...
+compiling ahrs.c...
+compiling i2c.c...
+compiling rtx_evr.c...
+compiling rtx_evflags.c...
+compiling RTX_Config.c...
+compiling rtx_lib.c...
+compiling rtx_memory.c...
+compiling rtx_kernel.c...
+compiling rtx_system.c...
+compiling os_systick.c...
+compiling rtx_mempool.c...
+compiling rtx_mutex.c...
+compiling stm32f4xx_hal.c...
+compiling rtx_semaphore.c...
+compiling rtx_msgqueue.c...
+compiling rtx_timer.c...
+compiling stm32f4xx_hal_cortex.c...
+compiling rtx_thread.c...
+compiling stm32f4xx_hal_dma.c...
+compiling stm32f4xx_hal_gpio.c...
+compiling stm32f4xx_hal_dma_ex.c...
+compiling stm32f4xx_hal_pwr_ex.c...
+compiling stm32f4xx_hal_pwr.c...
+compiling stm32f4xx_hal_msp.c...
+compiling stm32f4xx_hal_rcc_ex.c...
+compiling stm32f4xx_hal_timebase_tim.c...
+compiling stm32f4xx_hal_rcc.c...
+assembling startup_stm32f407xx.s...
+compiling stm32f4xx_hal_tim_ex.c...
+compiling system_stm32f4xx.c...
+compiling stm32f4xx_hal_uart.c...
+compiling stm32f4xx_hal_i2c.c...
+compiling stm32f4xx_hal_tim.c...
 linking...
-Program Size: Code=54852 RO-data=772 RW-data=844 ZI-data=96700  
+Program Size: Code=60984 RO-data=772 RW-data=852 ZI-data=96812  
 ".\Objects\prj_quadrotor.axf" - 0 Error(s), 0 Warning(s).
 
 <h2>Software Packages used:</h2>
@@ -91,39 +136,39 @@ Package Vendor: Keil
    * Component: ARM::CMSIS:CORE:5.6.0
 
    * Component: ARM::CMSIS:RTOS2:Keil RTX5:Source:5.5.4
-      Source file:   CMSIS\RTOS2\RTX\Config\RTX_Config.c
-      Include file:  CMSIS\RTOS2\RTX\Include\rtx_os.h
+      Source file:   CMSIS\RTOS2\RTX\Template\Semaphore.c
+      Include file:  CMSIS\RTOS2\RTX\Config\RTX_Config.h
       Source file:   CMSIS\RTOS2\RTX\Template\main.c
       Source file:   CMSIS\RTOS2\RTX\Template\Events.c
-      Source file:   CMSIS\RTOS2\RTX\Template\MemPool.c
-      Source file:   CMSIS\RTOS2\RTX\Template\MsgQueue.c
       Source file:   CMSIS\RTOS2\RTX\Template\Mutex.c
-      Source file:   CMSIS\RTOS2\RTX\Template\Semaphore.c
       Source file:   CMSIS\RTOS2\RTX\Template\Thread.c
       Source file:   CMSIS\RTOS2\RTX\Template\Timer.c
-      Include file:  CMSIS\RTOS2\RTX\Config\RTX_Config.h
-      Source file:   CMSIS\RTOS2\RTX\Source\rtx_thread.c
-      Source file:   CMSIS\RTOS2\RTX\Source\rtx_semaphore.c
-      Source file:   CMSIS\RTOS2\RTX\Source\GCC\irq_armv7m.S
-      Source file:   CMSIS\RTOS2\RTX\Source\rtx_system.c
-      Source file:   CMSIS\RTOS2\RTX\Source\rtx_mutex.c
-      Source file:   CMSIS\RTOS2\RTX\Source\rtx_delay.c
-      Source file:   CMSIS\RTOS2\RTX\Source\rtx_evr.c
-      Source file:   CMSIS\RTOS2\RTX\Source\rtx_timer.c
-      Source file:   CMSIS\RTOS2\RTX\Template\svc_user.c
-      Source file:   CMSIS\RTOS2\RTX\Source\rtx_memory.c
-      Source file:   CMSIS\RTOS2\RTX\Source\rtx_msgqueue.c
-      Source file:   CMSIS\RTOS2\RTX\Source\rtx_lib.c
+      Source file:   CMSIS\RTOS2\RTX\Config\RTX_Config.c
+      Source file:   CMSIS\RTOS2\RTX\Template\MsgQueue.c
+      Include file:  CMSIS\RTOS2\RTX\Include\rtx_os.h
+      Source file:   CMSIS\RTOS2\RTX\Template\MemPool.c
       Source file:   CMSIS\RTOS2\Source\os_systick.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_evr.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_delay.c
       Source file:   CMSIS\RTOS2\RTX\Source\rtx_mempool.c
-      Source file:   CMSIS\RTOS2\RTX\Source\rtx_evflags.c
       Source file:   CMSIS\RTOS2\RTX\Source\rtx_kernel.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_msgqueue.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_semaphore.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_thread.c
+      Source file:   CMSIS\RTOS2\RTX\Template\svc_user.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_system.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_evflags.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_lib.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_memory.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_timer.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_mutex.c
+      Source file:   CMSIS\RTOS2\RTX\Source\GCC\irq_armv7m.S
 
    * Component: Keil::Device:STM32Cube Framework:STM32CubeMX:1.1.0
-      Include file:  MX_Device.h
+      Include file:  STCubeGenerated\Inc\stm32f4xx_hal_conf.h
       Source file:   STCubeGenerated\Src\stm32f4xx_hal_msp.c
       Source file:   STCubeGenerated\Src\stm32f4xx_hal_timebase_tim.c
-      Include file:  STCubeGenerated\Inc\stm32f4xx_hal_conf.h
+      Include file:  MX_Device.h
 
    * Component: Keil::Device:STM32Cube HAL:Common:1.7.13
       Include file:  Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal.h
@@ -133,8 +178,8 @@ Package Vendor: Keil
       Source file:   Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_cortex.c
 
    * Component: Keil::Device:STM32Cube HAL:DMA:1.7.13
-      Source file:   Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_dma.c
       Source file:   Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_dma_ex.c
+      Source file:   Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_dma.c
 
    * Component: Keil::Device:STM32Cube HAL:GPIO:1.7.13
       Source file:   Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_gpio.c
@@ -143,12 +188,12 @@ Package Vendor: Keil
       Source file:   Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_i2c.c
 
    * Component: Keil::Device:STM32Cube HAL:PWR:1.7.13
-      Source file:   Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_pwr_ex.c
       Source file:   Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_pwr.c
+      Source file:   Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_pwr_ex.c
 
    * Component: Keil::Device:STM32Cube HAL:RCC:1.7.13
-      Source file:   Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_rcc_ex.c
       Source file:   Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_rcc.c
+      Source file:   Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_rcc_ex.c
 
    * Component: Keil::Device:STM32Cube HAL:TIM:1.7.13
       Source file:   Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_tim.c
@@ -158,12 +203,12 @@ Package Vendor: Keil
       Source file:   Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_uart.c
 
    * Component: Keil::Device:Startup:2.6.3
-      Source file:   MDK\Device\Source\ARM\STM32F4xx_OTP.s
-      Include file:  Drivers\CMSIS\Device\ST\STM32F4xx\Include\stm32f4xx.h
       Source file:   MDK\Device\Source\ARM\STM32F40xxx_41xxx_OPT.s
       Source file:   Drivers\CMSIS\Device\ST\STM32F4xx\Source\Templates\arm\startup_stm32f407xx.s
+      Source file:   MDK\Device\Source\ARM\STM32F4xx_OTP.s
+      Include file:  Drivers\CMSIS\Device\ST\STM32F4xx\Include\stm32f4xx.h
       Source file:   Drivers\CMSIS\Device\ST\STM32F4xx\Source\Templates\system_stm32f4xx.c
-Build Time Elapsed:  00:00:00
+Build Time Elapsed:  00:00:01
 </pre>
 </body>
 </html>

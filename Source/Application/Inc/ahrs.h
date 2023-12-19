@@ -91,6 +91,8 @@ typedef struct
 	
 	AHRS_OS_Resource osResource;
 	
+	AHRS_EulerAngles 	degreeEulerAngles;
+	
 }AHRS_Handle;
 
 /* Exported variables --------------------------------------------------------*/

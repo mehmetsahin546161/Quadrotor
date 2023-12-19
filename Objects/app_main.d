@@ -37,4 +37,7 @@
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_tim.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_tim_ex.h \
   C:\Users\3060\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_uart.h \
-  Source\SignalProcessing\Inc\pole_placement.h
+  Source\SignalProcessing\Inc\pole_placement.h \
+  RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\tim.h \
+  Source\Actuators\Inc\esc.h \
+  RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\main.h

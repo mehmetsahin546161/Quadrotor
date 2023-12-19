@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>.\Source\Common\Inc;.\Source\Sensors\Inc;.\Source\Application\Inc;.\Source\SignalProcessing\Inc</IncludePath>
+              <IncludePath>.\Source\Common\Inc;.\Source\Sensors\Inc;.\Source\Application\Inc;.\Source\SignalProcessing\Inc;.\Source\Actuators\Inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -416,6 +416,16 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>Actuators</GroupName>
+          <Files>
+            <File>
+              <FileName>esc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\Actuators\Src\esc.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>:STM32CubeMX:Common Sources</GroupName>
           <Files>
             <File>
@@ -457,6 +467,11 @@
               <FileName>usart.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\RTE\Device\STM32F407VGTx\STCubeGenerated\Src\usart.c</FilePath>
+            </File>
+            <File>
+              <FileName>tim.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\RTE\Device\STM32F407VGTx\STCubeGenerated\Src\tim.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -19,9 +19,9 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "i2c.h"
-#include "cmsis_os2.h"
 
 /* USER CODE BEGIN 0 */
+#include "cmsis_os2.h"
 
 /* Private define ------------------------------------------------------------*/
 #define I2C_EVENT_FLAG_TX_COMPLETED 	(1<<0)

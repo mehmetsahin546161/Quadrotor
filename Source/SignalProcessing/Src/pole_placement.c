@@ -1,12 +1,13 @@
 /* Includes ------------------------------------------------------------------*/
 #include "pole_placement.h"
 #include "defines.h"
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
+#include "stdio.h"
+#include "string.h"
+#include "math.h"
 #include "calc.h"
 #include "bmx160.h"
 #include "app_main.h"
+#include "tim.h"
 
 /* Private define ------------------------------------------------------------*/
 #define POLE_PLACEMENT_THREAD_STACK_SIZE	512
@@ -14,11 +15,15 @@
 #define EVT_FLAG_POLE_PLACEMENT_PERIOD_ELAPSED		(1<<0)
 #define EVT_FLAG_POLE_PLACEMENT_FAULT							(1<<1)
 
+#define W_TO_CCR(w) (0.087*w + 100)
 /* Private macro -------------------------------------------------------------*/
 
 /* Private typedef -----------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
+
+/* Exported variables --------------------------------------------------------*/
+
 
 /* Private function prototypes -----------------------------------------------*/
 static void PolePlc_ThreadFunc(void* arg);
@@ -91,10 +96,19 @@ bool PolePlc_IsControllerEnabled(PolePlacement_Handle * controller)
 	*	@param[OUT]		
   * @retval 		
   *--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+volatile 	double w1, w2, w3, w4;
+double z;
 static void PolePlc_ThreadFunc(void* arg)
 {
 	PolePlacement_Handle * controller = (PolePlacement_Handle *)arg;
 	uint32_t eventFlags = 0;
+	
+
+	double k = 0.00000625;
+	double h = 0.000000757;
+	double u2, u3, u4;
+	//double z;
+	double ccr1, ccr2, ccr3, ccr4;//%5 = 100, %10=200
 	
 	while(true)
 	{
@@ -107,6 +121,32 @@ static void PolePlc_ThreadFunc(void* arg)
 				PolePlc_CalculateControlSignal(controller);
 				
 				/* u[n] signals(controller->inputVector[i]) are evaluated. */
+				u2 = controller->inputVector[0];
+				u3 = controller->inputVector[1];
+				u4 = controller->inputVector[2];
+				
+				z=(h*u3 - h*u2 - k*u4 < 0)?0:h*u3 - h*u2 - k*u4;
+				
+				w1 = sqrt((h*u2 - h*u3 + k*u4 + 2*h*k*z)/(2*h*k));
+				w2 = sqrt((u2 + k*z)/k);
+				w3 = sqrt((h*u2 + h*u3 + k*u4 + 2*h*k*z)/(2*h*k));
+				w4 = sqrt(z);
+				
+				ccr1 = W_TO_CCR(w1);
+				ccr2 = W_TO_CCR(w2);
+				ccr3 = W_TO_CCR(w3);
+				ccr4 = W_TO_CCR(w4);
+				
+				
+				ccr1 = (ccr1<100)?100:(ccr1>200)?200:ccr1;
+				ccr2 = (ccr2<100)?100:(ccr2>200)?200:ccr2;
+				ccr3 = (ccr3<100)?100:(ccr3>200)?200:ccr3;
+				ccr4 = (ccr4<100)?100:(ccr4>200)?200:ccr4;
+				
+				__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, ccr1);
+				__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, ccr2);
+				__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, ccr3);
+				__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, ccr4);
 				
 			}
 			else if(eventFlags & EVT_FLAG_POLE_PLACEMENT_FAULT)

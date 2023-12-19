@@ -37,6 +37,7 @@
   RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\dma.h \
   RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\main.h \
   RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\i2c.h \
+  RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\tim.h \
   RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\usart.h \
   RTE\Device\STM32F407VGTx\STCubeGenerated\Inc\gpio.h \
   RTE\_Debug\RTE_Components.h \
